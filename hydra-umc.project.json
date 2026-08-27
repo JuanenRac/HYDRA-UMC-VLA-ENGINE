@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "ecosystem": "HYDRA-UMC",
   "name": "HYDRA-UMC-VLA-ENGINE",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "role": "service",
   "stack": "python",
   "technologies": [
@@ -10,11 +10,11 @@
     "Vision-Language-Action model"
   ],
   "deployment_target": "cm5",
-  "maturity": "scaffolding",
+  "maturity": "functional",
   "family": "Cognitive AI Node",
   "parent": "HYDRA-UMC-COGNITIVE-NODE",
-  "build": "Vision-Language-Action engine. Expect large model downloads on first installation.",
-  "notes": "Scaffolding stage: real entry point only - the real VLA model integration is future work.",
+  "build": "Vision-Language-Action engine. Expect large model downloads on first installation for the real model integration (still future work).",
+  "notes": "Functional v0: real action-token encoding/decoding (OpenVLA/RT-2-style 256-bin discretization per action dimension) and trajectory generation (delta-pose integration, absolute gripper state) - the 'Action Tokens' and 'Trajectory Generator' steps of the VLA flow, exposed via 'tokens encode'/'tokens decode'/'trajectory integrate'. 19 tests. Real VLA model inference (OpenVLA/RT-2 on Hailo-10) remains future work.",
   "native_version": {
     "file": "pyproject.toml",
     "pattern": "^version\\s*=\\s*\"(\\d+)\\.(\\d+)\\.(\\d+)\""

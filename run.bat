@@ -11,4 +11,5 @@ if exist .venv\Scripts\activate.bat (
     call .venv\Scripts\activate.bat
 )
 
-python -m hydra_umc_vla_engine.main
+python -m hydra_umc_vla_engine.main %*
+exit /b %errorlevel%

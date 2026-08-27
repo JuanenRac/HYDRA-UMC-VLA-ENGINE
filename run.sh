@@ -16,4 +16,4 @@ elif [ -f .venv/Scripts/activate ]; then
     source .venv/Scripts/activate
 fi
 
-python -m hydra_umc_vla_engine.main
+exec python -m hydra_umc_vla_engine.main "$@"

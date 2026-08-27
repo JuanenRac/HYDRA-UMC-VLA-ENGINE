@@ -23,10 +23,11 @@
 Questo motore consente al robot di comprendere comandi come "prendi il componente blu e posizionalo sul vassoio rosso" analizzando il flusso video in diretta e generando la sequenza cinematica corrispondente.
 
 ### Caratteristiche principali:
-* 🌉 **Controllo semantico:** Mappatura diretta da pixel e testo a posizioni dei giunti o comandi dello strumento.
-* ⚡ **Ragionamento in tempo reale:** Inferenza accelerata da Hailo-10 per la generazione di azioni a bassa latenza.
-* 🔄 **Generalizzazione Zero-Shot:** In grado di gestire oggetti mai visti prima basandosi su descrizioni semantiche.
-* 🛠️ **Pianificazione dei compiti:** Decompone obiettivi complessi in primitive robotiche atomiche.
+* ✅ **Reale v0 - token di azione e traiettoria:** `action_tokens.py` implementa lo schema di discretizzazione a 256 bin in stile OpenVLA/RT-2 (azione continua <-> token discreto, secondo lo spazio di azione a 7 gradi di libertà - delta di posa + gripper), e `trajectory.py` integra una sequenza di azioni decodificate in una traiettoria di pose assolute. Esposto tramite `tokens encode`/`tokens decode`/`trajectory integrate` più sotto - non serve un modello VLA né una NPU Hailo-10 per eseguirlo o testarlo.
+* 🌉 **Controllo semantico (previsto):** Mappatura diretta da pixel e testo a posizioni dei giunti o comandi dello strumento. *(richiede un vero modello VLA - lavoro futuro.)*
+* ⚡ **Ragionamento in tempo reale (previsto):** Inferenza accelerata da Hailo-10 per la generazione di azioni a bassa latenza. *(richiede la vera NPU Hailo-10 che questo ambiente non ha.)*
+* 🔄 **Generalizzazione Zero-Shot (previsto):** In grado di gestire oggetti mai visti prima basandosi su descrizioni semantiche. *(richiede un vero modello VLA addestrato.)*
+* 🛠️ **Pianificazione dei compiti (previsto):** Decompone obiettivi complessi in primitive robotiche atomiche. *(richiede un vero modello VLA.)*
 * 👨‍👩‍👧 **Figlio del Cognitive AI Node:** Gira come uno dei quattro
   servizi fratelli sotto [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE)
   (insieme a Voice-UI, Semantic-Planner e Docs-QA), condividendo
@@ -68,12 +69,14 @@ fratelli (Voice-UI, Semantic-Planner, Docs-QA):
   (`hydra_umc_vla_engine`) separato dal tooling nella radice del repo
   (`bump_version.py`), coerentemente con il resto dei progetti Python
   dell'ecosistema.
-* **Perché il punto di ingresso oggi si limita a stampare
-  identità/versione/ruolo.** Questa è la fase di andamiaje
-  (impalcatura): dimostrare che il pacchetto si installa, compila e
-  importa correttamente - sulla versione Python reale di destinazione -
-  è un prerequisito prima di aggiungere la vera logica di inferenza VLA,
-  e mantiene quel lavoro successivo isolato dalle questioni di packaging.
+* **Perché la tokenizzazione delle azioni arriva prima dell'inferenza del modello.**
+  Trasformare un'azione continua in token discreti (e viceversa) è
+  matematica fissa definita dai limiti dello spazio di azione e dalla
+  dimensione del vocabolario - non serve un modello VLA né una NPU
+  Hailo-10 per scriverla o testarla, quindi v0 consegna prima questo
+  pezzo (`action_tokens.py`, `trajectory.py`). La vera inferenza VLA
+  richiede i pesi del modello e l'hardware Hailo-10 che questo ambiente
+  non ha, e arriverà più avanti.
 * **Come si inserisce nel resto dell'ecosistema.** Questo motore
   converte la percezione grezza (frame della camera, concettualmente
   inoltrati da HYDRA-UMC-VISION-NODE a monte) e le istruzioni in
@@ -87,14 +90,18 @@ fratelli (Voice-UI, Semantic-Planner, Docs-QA):
 
 ```text
 HYDRA-UMC-VLA-ENGINE/
-├── src/hydra_umc_vla_engine/   # Codice sorgente (Tokenizer, Teste di azione, Modelli)
+├── src/hydra_umc_vla_engine/   # Codice sorgente
+│   ├── action_tokens.py        # Discretizzazione azione <-> token (stile OpenVLA/RT-2)
+│   ├── trajectory.py           # Integrazione sequenza di azioni -> traiettoria di pose
+│   └── main.py                 # Entry point CLI (invocazione nuda + `tokens`/`trajectory`)
+├── tests/                      # Suite pytest reale (action_tokens, trajectory, CLI)
 ├── docs/                       # Documentazione e benchmark
 ├── images/                     # Media e diagrammi
 ├── scripts/                    # Script di utilità
 ├── build/                      # Output di build locale (ignorato da git)
-├── pyproject.toml              # Metadati del pacchetto (versione 0.0.3, incremento stile contachilometri)
+├── pyproject.toml              # Metadati del pacchetto (versione a incremento contachilometri)
 ├── bump_version.py             # Incremento versione stile contachilometri (usato da build.sh/.bat)
-├── build.sh / build.bat        # Crea il venv, installa, verifica l'import
+├── build.sh / build.bat        # Crea il venv, installa (con extra dev), verifica l'import, esegue i test
 └── run.sh / run.bat            # Esegue il punto di ingresso
 ```
 
@@ -113,7 +120,8 @@ Richiede Python >= 3.10.
 
 ```bash
 # Linux / macOS / Git Bash
-./build.sh   # crea .venv, installa il pacchetto (editable), verifica l'import
+./build.sh   # crea .venv, installa il pacchetto (editable, con extra
+             # dev), verifica l'import, esegue la suite di test reale
 ./run.sh     # esegue il punto di ingresso
 
 # Windows (cmd)
@@ -123,11 +131,26 @@ run.bat
 
 `build.sh`/`build.bat` incrementano la versione (stile contachilometri,
 vedi `bump_version.py`) prima di ogni build reale. Output atteso di
-`run.sh`:
+`run.sh` (invocazione nuda):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.0.3
+HYDRA-UMC-VLA-ENGINE v0.0.4
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
+```
+
+Esempio reale - codificare un'azione in token, decodificarla, e integrare una breve sequenza di azioni in una traiettoria:
+
+```bash
+./run.sh tokens encode --action "0.02,-0.03,0.01,0.05,-0.04,0.02,0.7"
+# 179,51,153,192,76,153,179
+
+./run.sh tokens decode --tokens "179,51,153,192,76,153,179"
+# 0.020117,-0.030273,0.005273,0.050977,-0.037891,0.019922,0.699219
+
+./run.sh trajectory integrate --start "0,0,0,0,0,0" --actions actions.json
+# step 0: x=0.000000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.000000
+# step 1: x=0.010000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.500000
+# step 2: x=0.010000 y=0.010000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=1.000000
 ```
 
 ### 🩺 Risoluzione dei problemi
@@ -149,6 +172,14 @@ Vision-Language-Action engine (Hailo-10) - translates camera frames and text ins
 * **`import OK` non viene mai stampato.** Significa che `python -c
   "import hydra_umc_vla_engine"` è fallito - riesegui con il venv attivo
   per vedere il traceback reale.
+
+---
+
+## ✅ Stato Attuale e Prossimi Passi
+
+**Reale oggi:** la codifica/decodifica dei token di azione e la generazione di traiettoria (`action_tokens.py`, `trajectory.py`) - i passaggi "Token di azione" e "Generatore di traiettoria" del diagramma di flusso sopra - con 19 test e una CLI reale.
+
+**Ancora da fare, e bloccato da vero hardware/pesi del modello:** la vera inferenza del modello VLA (OpenVLA/RT-2 quantizzato per Hailo-10) che produrrebbe i token che questo v0 sa già decodificare.
 
 ---
 

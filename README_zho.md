@@ -26,10 +26,11 @@
 诸如"拿起蓝色组件并放到红色托盘上"这样的指令。
 
 ### 关键特性：
-* 🌉 **语义控制：** 从像素和文本直接映射到关节位置或工具指令。
-* ⚡ **实时推理：** Hailo-10 加速推理，实现低延迟动作生成。
-* 🔄 **零样本泛化：** 能够基于语义描述处理未见过的物体。
-* 🛠️ **任务规划：** 将复杂目标分解为原子级的机器人操作单元。
+* ✅ **真实 v0 —— 动作令牌与轨迹：** `action_tokens.py` 实现了 OpenVLA/RT-2 风格的 256-bin 离散化方案（连续动作 <-> 离散令牌，基于 7 自由度动作空间——位姿增量 + 夹爪），`trajectory.py` 将解码后的动作序列积分为绝对位姿轨迹。通过下方的 `tokens encode`/`tokens decode`/`trajectory integrate` 暴露——运行或测试都不需要 VLA 模型或 Hailo-10 NPU。
+* 🌉 **语义控制（计划中）：** 从像素和文本直接映射到关节位置或工具指令。*（需要真实的 VLA 模型——未来工作。）*
+* ⚡ **实时推理（计划中）：** Hailo-10 加速推理，实现低延迟动作生成。*（需要本环境不具备的真实 Hailo-10 NPU。）*
+* 🔄 **零样本泛化（计划中）：** 能够基于语义描述处理未见过的物体。*（需要真实的、经过训练的 VLA 模型。）*
+* 🛠️ **任务规划（计划中）：** 将复杂目标分解为原子级的机器人操作单元。*（需要真实的 VLA 模型。）*
 * 👨‍👩‍👧 **认知 AI 节点子项目：** 作为
   [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) 下 4 个同级服务之一运行（与 Voice-UI、Semantic-Planner 和 Docs-QA 并列），共享父项目的 HydraOS 镜像和模型权重，而非各自保留独立副本。
 * 📦 **里程表式版本管理：** 每次真实构建都会自动递增 `pyproject.toml`
@@ -57,7 +58,7 @@ flowchart LR
 
 * **为何本子项目没有自己的硬件/固件/`os/`/`models/`。** 它完全运行在父项目已拥有的 CM5 + Hailo-10 M.2 模块上——将模型权重和 HydraOS 镜像集中保存在一处，可避免整个项目族中出现四份互不一致的、动辄数 GB 的副本。
 * **为何采用 `src/` 布局。** 使可安装的包（`hydra_umc_vla_engine`）与仓库根目录的工具（`bump_version.py`）分离，与生态系统中其他每个 Python 项目所使用的布局保持一致。
-* **为何入口点今天只打印身份/版本/角色。** 这是脚手架（scaffolding）阶段：证明该包在实际目标 Python 版本上能够正确安装、编译并被导入，是后续添加真正的 VLA 推理逻辑的前提条件，并使那部分后续工作与打包相关的问题相互隔离。
+* **为何动作令牌化先于模型推理落地。** 将连续动作转化为离散令牌（及其逆过程）是由动作空间的边界和词表大小定义的固定数学运算——编写和测试都不需要 VLA 模型或 Hailo-10 NPU，因此 v0 优先交付这一部分（`action_tokens.py`、`trajectory.py`）。真正的 VLA 推理需要本环境不具备的模型权重和 Hailo-10 硬件，将在后续落地。
 * **这如何融入生态系统的其余部分。** 本引擎将原始感知数据（概念上由上游 HYDRA-UMC-VISION-NODE 转发的摄像头帧）和自然语言指令转化为动作令牌，其同级项目 HYDRA-UMC-SEMANTIC-PLANNER 再将这些令牌转化为供 HYDRA-UMC-ORCHESTRATOR 使用的任务级决策。
 
 ---
@@ -66,14 +67,18 @@ flowchart LR
 
 ```text
 HYDRA-UMC-VLA-ENGINE/
-├── src/hydra_umc_vla_engine/   # 源代码（分词器、动作头、模型）
+├── src/hydra_umc_vla_engine/   # 源代码
+│   ├── action_tokens.py        # 动作 <-> 令牌离散化（OpenVLA/RT-2 风格）
+│   ├── trajectory.py           # 动作序列 -> 位姿轨迹积分
+│   └── main.py                 # CLI 入口点（裸调用 + `tokens`/`trajectory`）
+├── tests/                      # 真实 pytest 套件（action_tokens、trajectory、CLI）
 ├── docs/                       # 文档与基准测试
 ├── images/                     # 媒体与图表
 ├── scripts/                    # 实用脚本
 ├── build/                      # 本地构建输出（已被 git 忽略）
-├── pyproject.toml              # 包元数据（版本 0.0.3，里程表式递增）
+├── pyproject.toml              # 包元数据（里程表式递增版本号）
 ├── bump_version.py             # 里程表式版本递增（由 build.sh/.bat 使用）
-├── build.sh / build.bat        # 创建 venv、安装、验证导入
+├── build.sh / build.bat        # 创建 venv、安装（含 dev 附加项）、验证导入、运行测试
 └── run.sh / run.bat            # 运行入口点
 ```
 
@@ -91,7 +96,8 @@ HYDRA-UMC-VLA-ENGINE/
 
 ```bash
 # Linux / macOS / Git Bash
-./build.sh   # 创建 .venv，安装该包（可编辑模式），验证导入
+./build.sh   # 创建 .venv，安装该包（可编辑模式，含 dev 附加项），验证导入，
+             # 运行真实的测试套件
 ./run.sh     # 运行入口点
 
 # Windows (cmd)
@@ -100,11 +106,26 @@ run.bat
 ```
 
 `build.sh`/`build.bat` 会在每次真实构建之前递增版本号（里程表式，见
-`bump_version.py`）。`run.sh` 的预期输出：
+`bump_version.py`）。`run.sh`（裸调用）的预期输出：
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.0.3
+HYDRA-UMC-VLA-ENGINE v0.0.4
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
+```
+
+真实示例——将一个动作编码为令牌，再解码回来，并将一小段动作序列积分为一条轨迹：
+
+```bash
+./run.sh tokens encode --action "0.02,-0.03,0.01,0.05,-0.04,0.02,0.7"
+# 179,51,153,192,76,153,179
+
+./run.sh tokens decode --tokens "179,51,153,192,76,153,179"
+# 0.020117,-0.030273,0.005273,0.050977,-0.037891,0.019922,0.699219
+
+./run.sh trajectory integrate --start "0,0,0,0,0,0" --actions actions.json
+# step 0: x=0.000000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.000000
+# step 1: x=0.010000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.500000
+# step 2: x=0.010000 y=0.010000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=1.000000
 ```
 
 ### 🩺 故障排查
@@ -113,6 +134,14 @@ Vision-Language-Action engine (Hailo-10) - translates camera frames and text ins
 * **`build.sh` 无法激活 venv。** `python3 -m venv .venv` 在不同平台上生成的激活脚本路径不同：Linux/macOS 上是 `.venv/bin/activate`，Windows（从 Git Bash 使用的 Windows Python venv 也是如此）上是 `.venv/Scripts/activate`。`build.sh` 已经检查了这两个路径——如果仍然失败，删除 `.venv/` 并重新运行 `./build.sh` 从头重建。
 * **`pip install -e .` 失败。** 通常是 `.venv/` 已过期。删除 `.venv/` 文件夹并重新运行 `./build.sh`/`build.bat` 重新创建它。
 * **`import OK` 从未打印。** 意味着 `python -c "import hydra_umc_vla_engine"` 本身失败了——在激活 venv 的情况下重新运行以查看真实的回溯信息。
+
+---
+
+## ✅ 当前状态与后续步骤
+
+**今天的真实进展：** 动作令牌编码/解码与轨迹生成（`action_tokens.py`、`trajectory.py`）——上方流程图中的"动作令牌"与"轨迹生成器"步骤——附带 19 个测试和一个真实的 CLI。
+
+**仍待完成，受限于真实硬件/模型权重：** 真实的 VLA 模型推理（为 Hailo-10 量化的 OpenVLA/RT-2），它将产生本 v0 已经能够解码的令牌。
 
 ---
 

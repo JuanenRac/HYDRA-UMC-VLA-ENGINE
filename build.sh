@@ -5,14 +5,16 @@
 # GPL-3.0 - see LICENSE
 # =============================================================================
 # Builds HYDRA-UMC-VLA-ENGINE: creates/activates a venv, installs the
-# project (editable) and verifies it compiles/imports cleanly. Run this
-# before run.sh.
+# project (editable, with dev extras), verifies it compiles/imports
+# cleanly, and runs the real test suite. Run this before run.sh.
 #
 # Usage:
 #   chmod +x build.sh   (one-time)
 #   ./build.sh
 set -euo pipefail
 cd "$(dirname "$0")"
+
+trap '[ -t 0 ] && read -r -p "Press Enter to close..." _' EXIT
 
 echo
 echo " ==============================================================="
@@ -24,13 +26,13 @@ echo "  License: GPL-3.0 (see LICENSE.md)"
 echo " ==============================================================="
 echo
 
-echo "[1/4] Bumping version number (odometer bump, see bump_version.py)..."
+echo "[1/5] Bumping version number (odometer bump, see bump_version.py)..."
 python3 bump_version.py || exit 1
 python3 "$(dirname "$0")/bump_manifest_version.py" --sync || exit 1
 echo "      Done."
 echo
 
-echo "[2/4] Creating/activating virtual environment..."
+echo "[2/5] Creating/activating virtual environment..."
 if [ ! -d .venv ]; then
     python3 -m venv .venv
 fi
@@ -48,15 +50,20 @@ fi
 echo "      Done."
 echo
 
-echo "[3/4] Installing project (editable) into the venv..."
+echo "[3/5] Installing project (editable, with dev extras) into the venv..."
 python -m pip install --upgrade pip >/dev/null
-python -m pip install -e .
+python -m pip install -e ".[dev]"
 echo "      Done."
 echo
 
-echo "[4/4] Verifying the package compiles/imports without errors..."
-python -m py_compile src/hydra_umc_vla_engine/__init__.py src/hydra_umc_vla_engine/main.py
+echo "[4/5] Verifying the package compiles/imports without errors..."
+python -m compileall -q src
 python -c "import hydra_umc_vla_engine; print('import OK - version', hydra_umc_vla_engine.__version__)"
+echo "      Done."
+echo
+
+echo "[5/5] Running the real test suite (pytest)..."
+python -m pytest tests/ -q
 echo "      Done."
 echo
 
