@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "ecosystem": "HYDRA-UMC",
+  "name": "HYDRA-UMC-VLA-ENGINE",
+  "version": "0.0.3",
+  "role": "service",
+  "stack": "python",
+  "technologies": [
+    "Python",
+    "Vision-Language-Action model"
+  ],
+  "deployment_target": "cm5",
+  "maturity": "scaffolding",
+  "family": "Cognitive AI Node",
+  "parent": "HYDRA-UMC-COGNITIVE-NODE",
+  "build": "Vision-Language-Action engine. Expect large model downloads on first installation.",
+  "notes": "Scaffolding stage: real entry point only - the real VLA model integration is future work.",
+  "native_version": {
+    "file": "pyproject.toml",
+    "pattern": "^version\\s*=\\s*\"(\\d+)\\.(\\d+)\\.(\\d+)\""
+  }
+}
