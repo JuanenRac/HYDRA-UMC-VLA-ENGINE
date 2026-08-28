@@ -27,6 +27,8 @@
 
 ### 关键特性：
 * ✅ **真实 v0 —— 动作令牌与轨迹：** `action_tokens.py` 实现了 OpenVLA/RT-2 风格的 256-bin 离散化方案（连续动作 <-> 离散令牌，基于 7 自由度动作空间——位姿增量 + 夹爪），`trajectory.py` 将解码后的动作序列积分为绝对位姿轨迹。通过下方的 `tokens encode`/`tokens decode`/`trajectory integrate` 暴露——运行或测试都不需要 VLA 模型或 Hailo-10 NPU。
+* 📜 **模型清单 + 输出验证：** 一份真实的、带版本管理的契约（`model_manifest.py`），任何未来的模型集成都必须满足——匹配动作/词表形状以及已知的 Hailo 芯片系列——外加对模型原始推理输出的形状/置信度验证。*（已实现）*
+* 🩺 **诚实的 `status` 子命令：** 报告真实的加速器/模型权重可用性——`no_accelerator`、`no_model_weights`，或 `hardware_ready_no_inference`——绝不是虚假的“就绪”状态。*（已实现）*
 * 🌉 **语义控制（计划中）：** 从像素和文本直接映射到关节位置或工具指令。*（需要真实的 VLA 模型——未来工作。）*
 * ⚡ **实时推理（计划中）：** Hailo-10 加速推理，实现低延迟动作生成。*（需要本环境不具备的真实 Hailo-10 NPU。）*
 * 🔄 **零样本泛化（计划中）：** 能够基于语义描述处理未见过的物体。*（需要真实的、经过训练的 VLA 模型。）*
@@ -60,6 +62,9 @@ flowchart LR
 * **为何采用 `src/` 布局。** 使可安装的包（`hydra_umc_vla_engine`）与仓库根目录的工具（`bump_version.py`）分离，与生态系统中其他每个 Python 项目所使用的布局保持一致。
 * **为何动作令牌化先于模型推理落地。** 将连续动作转化为离散令牌（及其逆过程）是由动作空间的边界和词表大小定义的固定数学运算——编写和测试都不需要 VLA 模型或 Hailo-10 NPU，因此 v0 优先交付这一部分（`action_tokens.py`、`trajectory.py`）。真正的 VLA 推理需要本环境不具备的模型权重和 Hailo-10 硬件，将在后续落地。
 * **这如何融入生态系统的其余部分。** 本引擎将原始感知数据（概念上由上游 HYDRA-UMC-VISION-NODE 转发的摄像头帧）和自然语言指令转化为动作令牌，其同级项目 HYDRA-UMC-SEMANTIC-PLANNER 再将这些令牌转化为供 HYDRA-UMC-ORCHESTRATOR 使用的任务级决策。
+* **为何 `model_manifest.py` 不指定具体的 OpenVLA/RT-2 变体。** 目前实际上还没有选定任何模型（参见本 README 自身的路线图）——`EXPECTED_MODEL_MANIFEST` 老实说只是一份直接源自 `action_tokens.py` 自身真实常量的形状/目标契约，而不是一个为不存在的模型准备的加载器。`hailo_arch` 复用了与 `HYDRA-UMC-DETECTION-HEF` 已经用来验证其自身模型注册表的同一套真实的、封闭的芯片系列集合。
+* **为何 `status` 报告的是 `hardware_ready_no_inference` 而不是“就绪”。** 即便真实的 Hailo-10 设备和真实的模型权重都已具备，这个 v0 仍然没有真正的推理代码——在那个时点宣称就绪将是关于一项尚不存在的能力的真实谎言。`hardware.py` 的 `determine_mode()` 会先检查加速器（一次廉价的设备节点探测），再检查模型权重，这与 `HYDRA-UMC-DETECTION-HEF` 的 `safe_load()` 已经采用的“最廉价前提条件优先”的顺序相同。
+* **为何 `model_weights_available()` 检查的是父项目的 `models/`，而不是本地的。** 本子项目没有自己的 `models/`（已被省略——见上一条）——真实的共享权重存放在父项目 `HYDRA-UMC-COGNITIVE-NODE` 自身的 `models/` 中，位于同级工作区上一层，正是该仓库自身的 `check_shared_models()` 已经检查的那个真实目录。
 
 ---
 
@@ -70,8 +75,10 @@ HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # 源代码
 │   ├── action_tokens.py        # 动作 <-> 令牌离散化（OpenVLA/RT-2 风格）
 │   ├── trajectory.py           # 动作序列 -> 位姿轨迹积分
-│   └── main.py                 # CLI 入口点（裸调用 + `tokens`/`trajectory`）
-├── tests/                      # 真实 pytest 套件（action_tokens、trajectory、CLI）
+│   ├── model_manifest.py       # 真实的模型形状契约 + 推理输出验证
+│   ├── hardware.py             # 真实的加速器/模型权重可用性探测
+│   └── main.py                 # CLI 入口点（裸调用 + `tokens`/`trajectory`/`status`）
+├── tests/                      # 真实 pytest 套件（action_tokens、trajectory、manifest、hardware、CLI）
 ├── docs/                       # 文档与基准测试
 ├── images/                     # 媒体与图表
 ├── scripts/                    # 实用脚本
@@ -126,6 +133,15 @@ Vision-Language-Action engine (Hailo-10) - translates camera frames and text ins
 # step 0: x=0.000000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.000000
 # step 1: x=0.010000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.500000
 # step 2: x=0.010000 y=0.010000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=1.000000
+```
+
+`status` 报告真实、诚实的加速器/模型权重可用性——绝不是虚假的就绪状态：
+
+```text
+$ ./run.sh status
+accelerator (Hailo-10):    MISSING
+model weights (parent):    MISSING
+mode: no_accelerator - no Hailo-10 NPU device node on this machine - real inference cannot run here.
 ```
 
 ### 🩺 故障排查

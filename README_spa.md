@@ -24,6 +24,8 @@ Este motor permite que el robot comprenda comandos como "recoge el componente az
 
 ### Características Clave:
 * ✅ **Real v0 - tokens de acción y trayectoria:** `action_tokens.py` implementa el esquema de discretización de 256 bins estilo OpenVLA/RT-2 (acción continua <-> token discreto, según el espacio de acción de 7 grados de libertad - delta de pose + gripper), y `trajectory.py` integra una secuencia de acciones decodificadas en una trayectoria de poses absolutas. Expuesto vía `tokens encode`/`tokens decode`/`trajectory integrate` más abajo - no hace falta modelo VLA ni NPU Hailo-10 para ejecutarlo ni testearlo.
+* 📜 **Manifiesto de modelo + validación de salida:** Un contrato real y versionado (`model_manifest.py`) que cualquier futura integración de modelo debe cumplir - haciendo coincidir la forma de acción/vocabulario y una familia de chip Hailo conocida - además de validación de forma/confianza para la salida cruda de inferencia de un modelo. *(implementado)*
+* 🩺 **Subcomando `status` honesto:** Reporta la disponibilidad real de acelerador/pesos de modelo - `no_accelerator`, `no_model_weights`, o `hardware_ready_no_inference` - nunca un falso estado "listo". *(implementado)*
 * 🌉 **Control Semántico (previsto):** Mapeo directo desde píxeles y texto a posiciones de articulaciones o comandos de herramienta. *(necesita un modelo VLA real - trabajo futuro.)*
 * ⚡ **Razonamiento en Tiempo Real (previsto):** Inferencia acelerada por Hailo-10 para generación de acciones de baja latencia. *(necesita la NPU Hailo-10 real que este entorno no tiene.)*
 * 🔄 **Generalización Zero-Shot (previsto):** Capaz de manejar objetos no vistos basados en descripciones semánticas. *(necesita un modelo VLA real entrenado.)*
@@ -81,6 +83,29 @@ hermanos (Voice-UI, Semantic-Planner, Docs-QA):
   HYDRA-UMC-VISION-NODE aguas arriba) e instrucciones en lenguaje natural
   en tokens de acción que su hermano HYDRA-UMC-SEMANTIC-PLANNER convierte
   en decisiones de misión para HYDRA-UMC-ORCHESTRATOR.
+* **Por qué `model_manifest.py` no nombra una variante específica de
+  OpenVLA/RT-2.** Todavía no se ha elegido ningún modelo (ver la Hoja de
+  Ruta de este mismo README) - `EXPECTED_MODEL_MANIFEST` es honestamente
+  un contrato de forma/objetivo derivado directamente de las constantes
+  reales de `action_tokens.py`, no un cargador para un modelo que no
+  existe. `hailo_arch` reutiliza el mismo conjunto real y cerrado de
+  familias de chip que `HYDRA-UMC-DETECTION-HEF` ya usa para validar su
+  propio registro de modelos.
+* **Por qué `status` reporta `hardware_ready_no_inference` en vez de
+  "listo".** Incluso una vez que un dispositivo Hailo-10 real y los
+  pesos de modelo reales estén ambos presentes, este v0 todavía no
+  tiene código de inferencia real - afirmar que está listo en ese punto
+  sería una mentira real sobre una capacidad que aún no existe.
+  `determine_mode()` de `hardware.py` comprueba primero el acelerador
+  (una prueba barata de nodo de dispositivo) antes que los pesos del
+  modelo, el mismo orden de precondición-más-barata-primero que ya usa
+  `safe_load()` de `HYDRA-UMC-DETECTION-HEF`.
+* **Por qué `model_weights_available()` comprueba el `models/` del
+  padre, no uno local.** Este hijo no tiene su propio `models/` (podado
+  - ver el punto anterior) - los pesos compartidos reales viven en el
+  propio `models/` del padre `HYDRA-UMC-COGNITIVE-NODE`, un nivel de
+  espacio de trabajo hermano más arriba, el mismo directorio real que ya
+  comprueba `check_shared_models()` de ese repositorio.
 
 ---
 
@@ -91,8 +116,10 @@ HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # Código fuente
 │   ├── action_tokens.py        # Discretizacion accion <-> token (estilo OpenVLA/RT-2)
 │   ├── trajectory.py           # Integracion de secuencia de acciones -> trayectoria de poses
-│   └── main.py                 # Entry point CLI (invocacion desnuda + `tokens`/`trajectory`)
-├── tests/                      # Suite pytest real (action_tokens, trajectory, CLI)
+│   ├── model_manifest.py       # Contrato real de forma de modelo + validación de salida de inferencia
+│   ├── hardware.py             # Sondas reales de disponibilidad de acelerador/pesos de modelo
+│   └── main.py                 # Entry point CLI (invocacion desnuda + `tokens`/`trajectory`/`status`)
+├── tests/                      # Suite pytest real (action_tokens, trajectory, manifest, hardware, CLI)
 ├── docs/                       # Documentación y benchmarks
 ├── images/                     # Medios y diagramas
 ├── scripts/                    # Scripts de utilidad
@@ -149,6 +176,16 @@ Ejemplo real - codificar una acción en tokens, decodificarla de vuelta, e integ
 # step 0: x=0.000000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.000000
 # step 1: x=0.010000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.500000
 # step 2: x=0.010000 y=0.010000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=1.000000
+```
+
+`status` reporta la disponibilidad real y honesta de acelerador/pesos de
+modelo - nunca un estado "listo" falso:
+
+```text
+$ ./run.sh status
+accelerator (Hailo-10):    MISSING
+model weights (parent):    MISSING
+mode: no_accelerator - no Hailo-10 NPU device node on this machine - real inference cannot run here.
 ```
 
 ### 🩺 Solución de problemas

@@ -24,6 +24,8 @@ This engine allows the robot to understand commands such as "pick the blue compo
 
 ### Key Features:
 * ✅ **Real v0 - action tokens & trajectory:** `action_tokens.py` implements the OpenVLA/RT-2-style 256-bin discretization scheme (continuous action <-> discrete token, per the 7-DOF pose-delta + gripper action space), and `trajectory.py` integrates a decoded action sequence into an absolute pose trajectory. Exposed via `tokens encode`/`tokens decode`/`trajectory integrate` below - no VLA model or Hailo-10 NPU needed to run or test it.
+* 📜 **Model manifest + output validation:** A real, versioned contract (`model_manifest.py`) any future model integration must satisfy - matching action/vocab shape and a known Hailo chip family - plus shape/confidence validation for a model's raw inference output. *(implemented)*
+* 🩺 **Honest `status` subcommand:** Reports real accelerator/model-weight availability - `no_accelerator`, `no_model_weights`, or `hardware_ready_no_inference` - never a fake "ready" state. *(implemented)*
 * 🌉 **Semantic Control (planned):** Direct mapping from pixels and text to joint positions or tool commands. *(needs a real VLA model - future work.)*
 * ⚡ **Real-Time Reasoning (planned):** Hailo-10 accelerated inference for low-latency action generation. *(needs the real Hailo-10 NPU this environment doesn't have.)*
 * 🔄 **Zero-Shot Generalization (planned):** Capable of handling unseen objects based on semantic descriptions. *(needs a real trained VLA model.)*
@@ -73,6 +75,27 @@ service into `docker-compose.yml` alongside its three siblings
   HYDRA-UMC-VISION-NODE upstream) and natural-language instructions into
   action tokens that HYDRA-UMC-SEMANTIC-PLANNER, its sibling, turns into
   mission-level decisions for HYDRA-UMC-ORCHESTRATOR.
+* **Why `model_manifest.py` doesn't name a specific OpenVLA/RT-2
+  variant.** No model has actually been chosen yet (see this README's
+  own Roadmap) - `EXPECTED_MODEL_MANIFEST` is honestly a shape/target
+  contract derived directly from `action_tokens.py`'s own real
+  constants, not a loader for a model that doesn't exist. `hailo_arch`
+  reuses the same real, closed chip-family set `HYDRA-UMC-DETECTION-HEF`
+  already validates its own model registry against.
+* **Why `status` reports `hardware_ready_no_inference` instead of
+  "ready".** Even once a real Hailo-10 device and real model weights are
+  both present, this v0 still has no real inference code - claiming
+  readiness at that point would be a real lie about a capability that
+  doesn't exist yet. `hardware.py`'s `determine_mode()` checks the
+  accelerator first (a cheap device-node probe) before the model
+  weights, the same cheapest-precondition-first ordering
+  `HYDRA-UMC-DETECTION-HEF`'s `safe_load()` already uses.
+* **Why `model_weights_available()` checks the parent's `models/`, not
+  a local one.** This child has no `models/` of its own (pruned - see
+  the bullet above) - the real shared weights live in the parent
+  `HYDRA-UMC-COGNITIVE-NODE`'s own `models/`, one sibling-workspace
+  level up, the same real directory that repo's own
+  `check_shared_models()` already checks.
 
 ---
 
@@ -83,8 +106,10 @@ HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # Source code
 │   ├── action_tokens.py        # Action <-> token discretization (OpenVLA/RT-2-style)
 │   ├── trajectory.py           # Action-sequence -> pose-trajectory integration
-│   └── main.py                 # CLI entry point (bare invocation + `tokens`/`trajectory`)
-├── tests/                      # Real pytest suite (action_tokens, trajectory, CLI)
+│   ├── model_manifest.py       # Real model shape contract + inference-output validation
+│   ├── hardware.py             # Real accelerator/model-weight availability probes
+│   └── main.py                 # CLI entry point (bare invocation + `tokens`/`trajectory`/`status`)
+├── tests/                      # Real pytest suite (action_tokens, trajectory, manifest, hardware, CLI)
 ├── docs/                       # Documentation and benchmarks
 ├── images/                     # Media and diagrams
 ├── scripts/                    # Utility scripts
@@ -141,6 +166,16 @@ Real example - encode an action into tokens, decode it back, and integrate a sho
 # step 0: x=0.000000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.000000
 # step 1: x=0.010000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.500000
 # step 2: x=0.010000 y=0.010000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=1.000000
+```
+
+`status` reports real, honest accelerator/model-weight availability -
+never a fake ready state:
+
+```text
+$ ./run.sh status
+accelerator (Hailo-10):    MISSING
+model weights (parent):    MISSING
+mode: no_accelerator - no Hailo-10 NPU device node on this machine - real inference cannot run here.
 ```
 
 ### 🩺 Troubleshooting

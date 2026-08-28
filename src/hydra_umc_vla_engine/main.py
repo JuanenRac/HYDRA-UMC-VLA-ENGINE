@@ -21,6 +21,7 @@ from pathlib import Path
 
 from . import __version__
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
+from .hardware import EngineMode, check_engine_status
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
 
 PROJECT_NAME = "HYDRA-UMC-VLA-ENGINE"
@@ -28,6 +29,26 @@ ROLE = (
     "Vision-Language-Action engine (Hailo-10) - translates camera frames "
     "and text instructions into robotic action sequences."
 )
+
+# This file lives at src/hydra_umc_vla_engine/main.py - two parents up is
+# this repo's own root, and one more level up is the workspace that
+# holds it as a sibling of HYDRA-UMC-COGNITIVE-NODE (see hardware.py).
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DEFAULT_WORKSPACE = _REPO_ROOT.parent
+
+_MODE_MESSAGES = {
+    EngineMode.NO_ACCELERATOR: "no Hailo-10 NPU device node on this machine - real inference cannot run here.",
+    EngineMode.NO_MODEL_WEIGHTS: "Hailo-10 present, but the parent's shared model weights are missing/empty - real inference cannot run here.",
+    EngineMode.HARDWARE_READY_NO_INFERENCE: "hardware and model weights are both present, but this v0 has no real inference code yet.",
+}
+
+
+def _cmd_status(args: argparse.Namespace) -> int:
+    status = check_engine_status(args.workspace)
+    print(f"accelerator (Hailo-10):    {'present' if status.accelerator_present else 'MISSING'}")
+    print(f"model weights (parent):    {'present' if status.model_weights_present else 'MISSING'}")
+    print(f"mode: {status.mode.value} - {_MODE_MESSAGES[status.mode]}")
+    return 0
 
 
 def _parse_floats(text: str, expected: int, label: str) -> tuple[float, ...]:
@@ -114,6 +135,17 @@ def _build_parser() -> argparse.ArgumentParser:
     integrate.add_argument("--start-gripper", type=float, default=0.0, dest="start_gripper")
     integrate.add_argument("--actions", required=True, help="Path to a JSON array of [dx,dy,dz,droll,dpitch,dyaw,gripper] arrays")
     integrate.set_defaults(func=_cmd_trajectory_integrate)
+
+    status = subparsers.add_parser(
+        "status", help="Real, honest report of accelerator/model-weight availability - never a fake ready state."
+    )
+    status.add_argument(
+        "--workspace",
+        type=Path,
+        default=_DEFAULT_WORKSPACE,
+        help="Directory containing the sibling repo checkouts (default: this repo's own parent directory).",
+    )
+    status.set_defaults(func=_cmd_status)
 
     return parser
 

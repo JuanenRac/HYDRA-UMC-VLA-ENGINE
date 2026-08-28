@@ -36,6 +36,16 @@ def test_tokens_encode_rejects_bad_action():
     assert "error" in result.stderr
 
 
+def test_status_reports_honest_state_on_this_real_dev_machine(tmp_path):
+    # This dev machine has no real Hailo-10 device node and no real
+    # parent model weights - status must say so plainly, never claim
+    # readiness it doesn't have.
+    result = run_cli("status", "--workspace", str(tmp_path))
+    assert result.returncode == 0
+    assert "accelerator (Hailo-10):    MISSING" in result.stdout
+    assert "no_accelerator" in result.stdout
+
+
 def test_trajectory_integrate(tmp_path):
     actions_path = tmp_path / "actions.json"
     actions_path.write_text(json.dumps([

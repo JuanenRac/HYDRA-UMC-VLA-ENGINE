@@ -5,9 +5,13 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
-## [0.0.4]
+## [0.0.5] - Model manifest contract, shape/confidence validation, honest safe mode
 
-- Build version synchronized with `hydra-umc.project.json` and the repository-native version source.
+- **A real, versioned model manifest contract** (`model_manifest.py`, new) - `EXPECTED_MODEL_MANIFEST` mirrors `action_tokens.py`'s own real `VLA_ACTION_SPACE`/`DEFAULT_VOCAB_SIZE` directly (never a separately-maintained literal, so it can't silently drift from the tokenizer it describes), and restricts `hailo_arch` to this ecosystem's own real, closed Hailo chip family (the same set `HYDRA-UMC-DETECTION-HEF` already validates its model registry against). No specific OpenVLA/RT-2 variant has been chosen yet - this is honestly a shape/target contract, not a model loader.
+- **Real shape + confidence validation for a future model's inference output** (`validate_inference_output()`) - checks `tokens` is exactly the right length with every value a real in-range integer, and `confidence` is a real number in `[0.0, 1.0]`. The real contract any VLA model integration would have to satisfy before its output is trusted enough to decode and execute.
+- **A real, honest `status` subcommand** (`hardware.py`, new) - probes the real Hailo-10 device node (`/dev/hailo0`) and the parent `HYDRA-UMC-COGNITIVE-NODE`'s own real shared `models/` directory (this project has none of its own), and reports one of three real, honest modes: `no_accelerator`, `no_model_weights`, or `hardware_ready_no_inference` - never a fourth "ready" state, since no real inference code exists yet regardless of what hardware is present.
+- 21 new tests (`test_model_manifest.py`, `test_hardware.py` new, plus a `test_cli.py` addition) = 40 total.
+- Real verification: ran `status` live against this machine's real ecosystem checkout - correctly and honestly reported both the missing Hailo-10 device and the real, empty parent `models/` directory.
 
 ## [0.0.4] - Real v0: action tokenization and trajectory generation
 
