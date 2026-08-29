@@ -5,6 +5,21 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
+## [0.0.6] - Fixed after a live ecosystem bug audit
+
+- **`README.md`** - the `tokens decode` example's shown output didn't
+  reproduce with the real code: decoding the exact tokens from the
+  `tokens encode` example two lines above (verified by actually running
+  it) produces a different result than the README claimed (5 of 7 values
+  wrong, one off by 12 bins). Replaced with the real, verified output,
+  plus a short note that decode isn't a perfect inverse of encode by
+  design (256-bin discretization recovers the bin midpoint, not the
+  original value). Also added the missing `actions.json` creation step
+  for the `trajectory integrate` example right after it, which
+  referenced a file the README never showed how to create - the whole
+  three-command example now runs end-to-end exactly as written,
+  verified by actually running it.
+
 ## [0.0.5] - Model manifest contract, shape/confidence validation, honest safe mode
 
 - **A real, versioned model manifest contract** (`model_manifest.py`, new) - `EXPECTED_MODEL_MANIFEST` mirrors `action_tokens.py`'s own real `VLA_ACTION_SPACE`/`DEFAULT_VOCAB_SIZE` directly (never a separately-maintained literal, so it can't silently drift from the tokenizer it describes), and restricts `hailo_arch` to this ecosystem's own real, closed Hailo chip family (the same set `HYDRA-UMC-DETECTION-HEF` already validates its model registry against). No specific OpenVLA/RT-2 variant has been chosen yet - this is honestly a shape/target contract, not a model loader.

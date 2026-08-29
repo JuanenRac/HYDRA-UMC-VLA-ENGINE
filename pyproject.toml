@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hydra-umc-vla-engine"
-version = "0.0.5"
+version = "0.0.6"
 description = "Multimodal Vision-Language-Action engine that translates visual context and natural language into direct robotic actions on Hailo-10."
 readme = "README.md"
 requires-python = ">=3.10"
