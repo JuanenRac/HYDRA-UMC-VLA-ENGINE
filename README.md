@@ -204,7 +204,7 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## ✅ Current Status & Next Steps
 
-**Real today:** action-token encoding/decoding and trajectory generation (`action_tokens.py`, `trajectory.py`) - the "Action Tokens" and "Trajectory Generator" steps in the flow diagram above - with 19 tests and a real CLI.
+**Real today:** action-token encoding/decoding and trajectory generation (`action_tokens.py`, `trajectory.py`) - the "Action Tokens" and "Trajectory Generator" steps in the flow diagram above - with 20 tests and a real CLI.
 
 **Still ahead, and blocked on real hardware/model weights:** actual VLA model inference (OpenVLA/RT-2 quantized for Hailo-10) that would produce the tokens this v0 already knows how to decode.
 

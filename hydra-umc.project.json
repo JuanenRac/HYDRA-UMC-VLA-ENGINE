@@ -14,7 +14,7 @@
   "family": "Cognitive AI Node",
   "parent": "HYDRA-UMC-COGNITIVE-NODE",
   "build": "Vision-Language-Action engine. Expect large model downloads on first installation for the real model integration (still future work).",
-  "notes": "Real action-token encoding/decoding (OpenVLA/RT-2-style 256-bin discretization per action dimension) and trajectory generation (delta-pose integration, absolute gripper state) - the 'Action Tokens' and 'Trajectory Generator' steps of the VLA flow, exposed via 'tokens encode'/'tokens decode'/'trajectory integrate'. A real, versioned model manifest contract (model_manifest.py) plus shape/confidence validation for a future model's inference output, and an honest 'status' subcommand reporting real accelerator/model-weight availability (never a fake ready state). 40 tests. Real VLA model inference (OpenVLA/RT-2 on Hailo-10) remains future work.",
+  "notes": "Real action-token encoding/decoding (OpenVLA/RT-2-style 256-bin discretization per action dimension) and trajectory generation (delta-pose integration, absolute gripper state) - the 'Action Tokens' and 'Trajectory Generator' steps of the VLA flow, exposed via 'tokens encode'/'tokens decode'/'trajectory integrate'. A real, versioned model manifest contract (model_manifest.py) plus shape/confidence validation for a future model's inference output, and an honest 'status' subcommand reporting real accelerator/model-weight availability (never a fake ready state). 46 tests. Real VLA model inference (OpenVLA/RT-2 on Hailo-10) remains future work.",
   "native_version": {
     "file": "pyproject.toml",
     "pattern": "^version\\s*=\\s*\"(\\d+)\\.(\\d+)\\.(\\d+)\""
