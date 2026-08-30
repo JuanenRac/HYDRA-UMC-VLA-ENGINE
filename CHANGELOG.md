@@ -13,6 +13,34 @@ bumped manually only. See `bump_version.py`.
   a non-physical trajectory that a later integration might mistake as usable.
 - Added CLI and trajectory tests for malformed and non-finite values.
 
+## [0.0.8] - Real HailoRT integration boundary, prepared ahead of the Hailo-10 module
+
+- **Added `src/hydra_umc_vla_engine/hailo_runtime.py`** (new) - a real
+  HailoRT (`hailo_platform`) integration boundary, so this engine is
+  ready to actually run inference the moment a real Hailo-10 M.2 module
+  is attached, rather than starting that work from zero then. `open_vdevice()`
+  and `load_hailo_vla_model()` are written against the real, confirmed
+  HailoRT Python API (`VDevice`, `HEF`, `ConfigureParams.create_from_hef(...,
+  interface=HailoStreamInterface.PCIe)`, `InputVStreamParams.make()`/
+  `OutputVStreamParams.make()`), lazily imported (same pattern as this
+  ecosystem's other real hardware transports - `serial_transport.py`,
+  `mavlink_transport.py`, `spi_bridge/transport.py`) so this development
+  machine, which has no `hailort` installed, degrades to a clear
+  `HailoNotAvailableError` instead of a bare `ImportError`.
+  `hailo_output_to_tokens()` adapts a real `InferVStreams` inference
+  result into this engine's own `{"tokens": [...], "confidence": ...}`
+  contract (`model_manifest.validate_inference_output()`) and needs no
+  real hailort to exercise - fully unit-tested against plain-list fakes
+  standing in for a real numpy-backed result. `hailort` added as a new
+  `[project.optional-dependencies]` extra (`pip install .[hailo]`);
+  never a required dependency, since importing/testing this package must
+  keep working on any machine without a Hailo module attached. 7 new
+  tests (53 total). Actually running inference still needs a real
+  compiled `.hef` model (no specific VLA model has been chosen yet - see
+  `model_manifest.py`'s own note) and a physical Hailo-10 module, both
+  future work - but loading one, once it exists, is no longer a blank
+  page.
+
 ## [0.0.7] - Fixed a real version-mirror drift
 
 - **`src/hydra_umc_vla_engine/__init__.py`**'s `__version__` had fallen

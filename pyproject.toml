@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hydra-umc-vla-engine"
-version = "0.0.7"
+version = "0.0.8"
 description = "Multimodal Vision-Language-Action engine that translates visual context and natural language into direct robotic actions on Hailo-10."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -16,8 +16,12 @@ keywords = ["hydra-umc", "hailo-10", "vla", "vision-language-action", "robotics"
 
 # No runtime dependencies - the v0 action-tokenization and trajectory
 # generation math (action_tokens.py, trajectory.py) uses only the stdlib.
+# hailo_runtime.py's own hailort import is lazy (see that module's own
+# header) so this extra is only needed to actually run inference against
+# a real Hailo-10 module - never to import or test this package.
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+hailo = ["hailort"]
 
 [project.urls]
 Homepage = "https://github.com/JuanenRac/HYDRA-UMC-VLA-ENGINE"

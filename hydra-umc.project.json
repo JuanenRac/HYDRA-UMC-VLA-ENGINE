@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "ecosystem": "HYDRA-UMC",
   "name": "HYDRA-UMC-VLA-ENGINE",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "role": "service",
   "stack": "python",
   "technologies": [
@@ -14,7 +14,7 @@
   "family": "Cognitive AI Node",
   "parent": "HYDRA-UMC-COGNITIVE-NODE",
   "build": "Vision-Language-Action engine. Expect large model downloads on first installation for the real model integration (still future work).",
-  "notes": "Real action-token encoding/decoding (OpenVLA/RT-2-style 256-bin discretization per action dimension) and trajectory generation (delta-pose integration, absolute gripper state) - the 'Action Tokens' and 'Trajectory Generator' steps of the VLA flow, exposed via 'tokens encode'/'tokens decode'/'trajectory integrate'. A real, versioned model manifest contract (model_manifest.py) plus shape/confidence validation for a future model's inference output, and an honest 'status' subcommand reporting real accelerator/model-weight availability (never a fake ready state). 46 tests. Real VLA model inference (OpenVLA/RT-2 on Hailo-10) remains future work.",
+  "notes": "Real action-token encoding/decoding (OpenVLA/RT-2-style 256-bin discretization per action dimension) and trajectory generation (delta-pose integration, absolute gripper state) - the 'Action Tokens' and 'Trajectory Generator' steps of the VLA flow, exposed via 'tokens encode'/'tokens decode'/'trajectory integrate'. A real, versioned model manifest contract (model_manifest.py) plus shape/confidence validation for a future model's inference output, and an honest 'status' subcommand reporting real accelerator/model-weight availability (never a fake ready state). Added hailo_runtime.py: a real HailoRT (hailo_platform) integration boundary - open_vdevice()/load_hailo_vla_model() against the real confirmed API (VDevice, HEF, ConfigureParams, InputVStreamParams/OutputVStreamParams), lazily imported so this dev machine (no hailort installed) degrades to a clear RuntimeError; hailo_output_to_tokens() adapts a real InferVStreams result into this engine's own token/confidence contract and is fully unit-tested without hailort. 53 tests. Real VLA model inference still needs a real .hef model and a physical Hailo-10 module, both future work.",
   "native_version": {
     "file": "pyproject.toml",
     "pattern": "^version\\s*=\\s*\"(\\d+)\\.(\\d+)\\.(\\d+)\""
