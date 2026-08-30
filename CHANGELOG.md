@@ -5,6 +5,16 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
+## [0.0.7] - Fixed a real version-mirror drift
+
+- **`src/hydra_umc_vla_engine/__init__.py`**'s `__version__` had fallen
+  one real build behind `pyproject.toml`/the manifest - running only
+  `bump_manifest_version.py` (which only touches its declared
+  `native_version.file`, pyproject.toml) without this repo's separate
+  `bump_version.py` (the one that keeps `__init__.py` mirrored) leaves
+  the two drifting apart. Fixed via the real, intended sequence
+  (`bump_version.py` then `bump_manifest_version.py --sync`).
+
 ## [0.0.6] - Fixed after a live ecosystem bug audit
 
 - **`README.md`** - the `tokens decode` example's shown output didn't
