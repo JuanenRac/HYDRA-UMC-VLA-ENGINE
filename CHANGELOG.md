@@ -5,6 +5,14 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
+## [Unreleased] - finite VLA trajectory input gate
+
+- **`main.py` / `trajectory.py`** - command and library trajectories now
+  reject `NaN`, infinity, booleans, strings and non-array JSON actions before
+  accumulating pose values. Invalid model or file data cannot silently create
+  a non-physical trajectory that a later integration might mistake as usable.
+- Added CLI and trajectory tests for malformed and non-finite values.
+
 ## [0.0.7] - Fixed a real version-mirror drift
 
 - **`src/hydra_umc_vla_engine/__init__.py`**'s `__version__` had fallen

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -56,9 +57,12 @@ def _parse_floats(text: str, expected: int, label: str) -> tuple[float, ...]:
     if len(parts) != expected:
         raise TokenizationError(f"{label}: expected {expected} comma-separated values, got {len(parts)}")
     try:
-        return tuple(float(p) for p in parts)
+        values = tuple(float(p) for p in parts)
     except ValueError as exc:
         raise TokenizationError(f"{label}: non-numeric value: {exc}") from exc
+    if not all(math.isfinite(value) for value in values):
+        raise TokenizationError(f"{label}: values must be finite")
+    return values
 
 
 def _parse_ints(text: str, expected: int, label: str) -> tuple[int, ...]:
@@ -97,6 +101,8 @@ def _cmd_trajectory_integrate(args: argparse.Namespace) -> int:
     try:
         start_values = _parse_floats(args.start, 6, "--start")
         actions_raw = json.loads(Path(args.actions).read_text(encoding="utf-8"))
+        if not isinstance(actions_raw, list):
+            raise TrajectoryError("actions: expected a JSON array")
         actions = [tuple(a) for a in actions_raw]
         start = Pose(*start_values, gripper=args.start_gripper)
         poses = integrate_trajectory(start, actions)

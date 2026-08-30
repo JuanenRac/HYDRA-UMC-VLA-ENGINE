@@ -41,6 +41,19 @@ def test_wrong_action_dimensionality_raises():
         integrate_trajectory(start, [(0.0, 0.0, 0.0)])
 
 
+@pytest.mark.parametrize("invalid", [float("nan"), float("inf"), "0.1", True])
+def test_non_finite_or_non_numeric_action_is_rejected(invalid):
+    start = Pose(0, 0, 0, 0, 0, 0, gripper=0.0)
+    with pytest.raises(TrajectoryError):
+        integrate_trajectory(start, [(invalid, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)])
+
+
+def test_non_finite_start_pose_is_rejected():
+    start = Pose(float("nan"), 0, 0, 0, 0, 0, gripper=0.0)
+    with pytest.raises(TrajectoryError):
+        integrate_trajectory(start, [])
+
+
 def test_rotation_deltas_accumulate():
     start = Pose(0, 0, 0, 0, 0, 0, gripper=0.0)
     actions = [(0, 0, 0, 0.1, 0.0, 0.0, 0.0), (0, 0, 0, 0.1, 0.0, 0.0, 0.0)]

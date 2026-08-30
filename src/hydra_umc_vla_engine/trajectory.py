@@ -14,6 +14,7 @@ from running the model or the Hailo-10 NPU that would produce the deltas.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 
 from .action_tokens import ActionSpec, VLA_ACTION_SPACE
 
@@ -33,6 +34,16 @@ class Pose:
     gripper: float
 
 
+def _require_finite(value: object, label: str) -> float:
+    """Return a safe numeric coordinate or reject malformed model output."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TrajectoryError(f"{label}: expected a number")
+    numeric = float(value)
+    if not math.isfinite(numeric):
+        raise TrajectoryError(f"{label}: value must be finite")
+    return numeric
+
+
 def integrate_trajectory(
     start: Pose,
     actions: list[tuple[float, ...]],
@@ -50,12 +61,19 @@ def integrate_trajectory(
     if len(specs) != 7:
         raise TrajectoryError(f"integrate_trajectory expects a 7-DOF action space, got {len(specs)}")
 
+    start_values = (start.x, start.y, start.z, start.roll, start.pitch, start.yaw, start.gripper)
+    for label, value in zip(("start.x", "start.y", "start.z", "start.roll", "start.pitch", "start.yaw", "start.gripper"), start_values):
+        _require_finite(value, label)
+
     poses = [start]
     current = start
     for step, action in enumerate(actions):
         if len(action) != 7:
             raise TrajectoryError(f"action {step}: expected 7 values (6 deltas + gripper), got {len(action)}")
-        dx, dy, dz, droll, dpitch, dyaw, gripper = action
+        dx, dy, dz, droll, dpitch, dyaw, gripper = (
+            _require_finite(value, f"action {step}[{index}]")
+            for index, value in enumerate(action)
+        )
         current = Pose(
             x=current.x + dx, y=current.y + dy, z=current.z + dz,
             roll=current.roll + droll, pitch=current.pitch + dpitch, yaw=current.yaw + dyaw,

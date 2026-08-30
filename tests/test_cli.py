@@ -36,6 +36,12 @@ def test_tokens_encode_rejects_bad_action():
     assert "error" in result.stderr
 
 
+def test_tokens_encode_rejects_non_finite_action():
+    result = run_cli("tokens", "encode", "--action", "nan,0,0,0,0,0,0.5")
+    assert result.returncode == 1
+    assert "finite" in result.stderr
+
+
 def test_status_reports_honest_state_on_this_real_dev_machine(tmp_path):
     # This dev machine has no real Hailo-10 device node and no real
     # parent model weights - status must say so plainly, never claim
