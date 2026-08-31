@@ -3,14 +3,15 @@
 # Copyright (C) 2026 JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
 # GPL-3.0-or-later - see LICENSE
 # =============================================================================
-# --workspace points at the real sibling-repo checkout root on this CM5
-# (/opt/hydra-umc/vla-engine/workspace, a symlink to it - see
+# --workspace points at a real root:root 0755 tree under /opt (see
 # install_vla_engine.sh), the same layout check_engine_status() already
-# expects (workspace/HYDRA-UMC-COGNITIVE-NODE/models/). That checkout
-# root lives under the operator's home directory, so ProtectHome is
-# "read-only" here, not the family's usual "true" (which would make
-# /home/ - and this symlink's real target - inaccessible) - same real
-# lesson learned installing HYDRA-UMC-VISION-NODE/HYDRA-UMC-COGNITIVE-NODE.
+# expects (workspace/HYDRA-UMC-COGNITIVE-NODE/models/). Deliberately NOT
+# a symlink to the real sibling-repo checkout root - real bug found live
+# installing HYDRA-UMC-VISION-NODE first: that root lives under the
+# operator's home directory (0700, Debian's own default), unreadable by
+# this service's own unprivileged account no matter how ProtectHome is
+# set. ProtectHome stays this family's usual "true" - nothing under
+# /home/ needs to be reachable any more.
 [Unit]
 Description=HYDRA-UMC-VLA-ENGINE real action-tokenization/trajectory API
 After=network-online.target
@@ -28,7 +29,7 @@ RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
 PrivateDevices=true
-ProtectHome=read-only
+ProtectHome=true
 ProtectSystem=strict
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 

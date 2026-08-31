@@ -13,6 +13,19 @@ bumped manually only. See `bump_version.py`.
   a non-physical trajectory that a later integration might mistake as usable.
 - Added CLI and trajectory tests for malformed and non-finite values.
 
+## [0.1.0] - The 0.0.9 workspace approach was unreadable by its own service account
+
+- **`systemd/hydra-umc-vla-engine.service`** - `--workspace` no longer
+  symlinks to the real sibling-checkout root. Live-verified failure on
+  the real CM5 this was first installed on: that checkout root lives
+  under the operator's own home directory, itself `0700` (Debian's own
+  default) - unreadable by this service's own unprivileged account no
+  matter how `ProtectHome` is set (see HYDRA-UMC-VISION-NODE's own
+  CHANGELOG, 0.0.6, for the full writeup - same real bug, found there
+  first). `install_vla_engine.sh` now creates a real `root:root 0755`
+  `workspace/HYDRA-UMC-COGNITIVE-NODE/models/` directly under `/opt`
+  instead - `ProtectHome` reverts to this family's usual `true`.
+
 ## [0.0.9] - Real v0: JSON/HTTP server mode, plus CM5 deployment
 
 - **`api.py`** (new) - `POST /tokens/encode`, `POST /tokens/decode`,
