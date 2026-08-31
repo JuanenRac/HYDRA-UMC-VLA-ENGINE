@@ -1,0 +1,36 @@
+# =============================================================================
+# HYDRA-UMC-VLA-ENGINE - Local CM5 action-tokenization/trajectory API systemd unit
+# Copyright (C) 2026 JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
+# GPL-3.0-or-later - see LICENSE
+# =============================================================================
+# --workspace points at the real sibling-repo checkout root on this CM5
+# (/opt/hydra-umc/vla-engine/workspace, a symlink to it - see
+# install_vla_engine.sh), the same layout check_engine_status() already
+# expects (workspace/HYDRA-UMC-COGNITIVE-NODE/models/). That checkout
+# root lives under the operator's home directory, so ProtectHome is
+# "read-only" here, not the family's usual "true" (which would make
+# /home/ - and this symlink's real target - inaccessible) - same real
+# lesson learned installing HYDRA-UMC-VISION-NODE/HYDRA-UMC-COGNITIVE-NODE.
+[Unit]
+Description=HYDRA-UMC-VLA-ENGINE real action-tokenization/trajectory API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hydra-umc-vla-engine
+Group=hydra-umc-vla-engine
+WorkingDirectory=/opt/hydra-umc/vla-engine
+Environment=PYTHONPATH=/opt/hydra-umc/vla-engine/src
+ExecStart=/usr/bin/python3 -m hydra_umc_vla_engine.main serve --addr 127.0.0.1 --port 8098 --workspace /opt/hydra-umc/vla-engine/workspace
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectHome=read-only
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

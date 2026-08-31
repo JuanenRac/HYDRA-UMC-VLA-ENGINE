@@ -22,6 +22,7 @@ from pathlib import Path
 
 from . import __version__
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
+from .api import VlaEngineServer
 from .hardware import EngineMode, check_engine_status
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
 
@@ -116,6 +117,20 @@ def _cmd_trajectory_integrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_serve(args: argparse.Namespace) -> int:
+    server = VlaEngineServer((args.addr, args.port), args.workspace)
+    print(f"[vla-engine] HTTP API listening on {args.addr}:{args.port} (workspace={args.workspace})")
+    print("[vla-engine] POST /tokens/encode, POST /tokens/decode, POST /trajectory/integrate, GET /status, GET /stats")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+        print("[vla-engine] shutting down")
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hydra-umc-vla-engine")
     subparsers = parser.add_subparsers(dest="command")
@@ -152,6 +167,22 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Directory containing the sibling repo checkouts (default: this repo's own parent directory).",
     )
     status.set_defaults(func=_cmd_status)
+
+    serve = subparsers.add_parser(
+        "serve",
+        help="Run tokens encode/decode, trajectory integrate, and status as a JSON/HTTP "
+             "API (POST /tokens/encode, POST /tokens/decode, POST /trajectory/integrate, "
+             "GET /status) - the exact same functions the CLI subcommands above already run.",
+    )
+    serve.add_argument("--addr", default="127.0.0.1", help="address to bind the HTTP API to")
+    serve.add_argument("--port", type=int, default=8098, help="port for the HTTP API")
+    serve.add_argument(
+        "--workspace",
+        type=Path,
+        default=_DEFAULT_WORKSPACE,
+        help="Default workspace for GET /status when it is not overridden per-request.",
+    )
+    serve.set_defaults(func=_cmd_serve)
 
     return parser
 

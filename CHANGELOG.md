@@ -13,6 +13,28 @@ bumped manually only. See `bump_version.py`.
   a non-physical trajectory that a later integration might mistake as usable.
 - Added CLI and trajectory tests for malformed and non-finite values.
 
+## [0.0.9] - Real v0: JSON/HTTP server mode, plus CM5 deployment
+
+- **`api.py`** (new) - `POST /tokens/encode`, `POST /tokens/decode`,
+  `POST /trajectory/integrate`, and `GET /status` reach the exact same
+  `action_tokens.py`/`trajectory.py`/`hardware.py` functions the CLI's
+  own subcommands already run. `POST /trajectory/integrate` takes the
+  action sequence directly in the JSON body rather than a server-side
+  file path - the CLI's own `--actions PATH` only made sense on the same
+  machine as that file. Real gap this closes: this project's own
+  tokenization/trajectory math was only ever reachable as a one-shot CLI.
+- **`main.py`** - new `serve` subcommand (`--workspace`/`--addr`/`--port`,
+  default `127.0.0.1:8098`).
+- **`systemd/hydra-umc-vla-engine.service`** (new) - unit for
+  `HYDRA-UMC-OS/provisioning/install_vla_engine.sh` (new, that repo).
+  `--workspace` symlinks to the real sibling-checkout root already on the
+  CM5, the same layout `check_engine_status()` already expects
+  (`workspace/HYDRA-UMC-COGNITIVE-NODE/models/`) - `ProtectHome` is
+  `read-only`, not the family's usual `true`, since that root lives
+  under the operator's home directory (same real lesson from
+  HYDRA-UMC-VISION-NODE's own install).
+- 11 new tests (`tests/test_api.py`, real end-to-end HTTP) - 64 total.
+
 ## [0.0.8] - Real HailoRT integration boundary, prepared ahead of the Hailo-10 module
 
 - **Added `src/hydra_umc_vla_engine/hailo_runtime.py`** (new) - a real
