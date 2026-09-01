@@ -231,7 +231,18 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## 🔗 VERWANDTE PROJEKTE
 
-Dieses Projekt ist Teil eines größeren Robotik-Ökosystems desselben Autors (JuanenRac / Electro Hobby 3D), das Firmware, Steuerungssoftware, KI-Knoten und Flotten-Tooling umfasst. Diese Engine hat außer der bereits oben beschriebenen eigenen Familie (Elternteil HYDRA-UMC-COGNITIVE-NODE und Geschwister HYDRA-UMC-VOICE-UI, HYDRA-UMC-SEMANTIC-PLANNER, HYDRA-UMC-DOCS-QA) keine weiteren Beziehungen.
+Dieses Projekt ist Teil eines größeren Robotik-Ökosystems desselben Autors (JuanenRac / Electro Hobby 3D), das Firmware, Steuerungssoftware, KI-Knoten und Flotten-Tooling umfasst.
+
+### Familie
+
+**Elternteil:** **[HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE)** — der Integrations-Hub, der das gemeinsame HydraOS-Image/die Gewichte dieser Engine besitzt und sie in den kognitiven Workflow einbindet.
+
+**Geschwister:**
+- **[HYDRA-UMC-VOICE-UI](https://github.com/JuanenRac/HYDRA-UMC-VOICE-UI)** — STT/TTS-Gateway für denselben Planer, den auch diese Engine speist.
+- **[HYDRA-UMC-SEMANTIC-PLANNER](https://github.com/JuanenRac/HYDRA-UMC-SEMANTIC-PLANNER)** — der LLM-Planer, den die Aktions-Tokens dieser Engine speisen.
+- **[HYDRA-UMC-DOCS-QA](https://github.com/JuanenRac/HYDRA-UMC-DOCS-QA)** — RAG-Assistent, der denselben Planer in technischen Handbüchern verankert.
+
+Diese Engine hat außer der bereits oben beschriebenen eigenen Familie keine weiteren Beziehungen.
 
 ### Rest des Ökosystems
 

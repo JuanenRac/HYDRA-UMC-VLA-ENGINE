@@ -179,11 +179,18 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 本プロジェクトは、同一著者（JuanenRac / Electro Hobby 3D）による、
 ファームウェア、制御ソフトウェア、AI ノード、フリート管理ツールにまたがる、
-より大きなロボティクスエコシステムの一部です。上記で既に説明した内容を
-超えて、本エンジンは自身のファミリー（親プロジェクト
-HYDRA-UMC-COGNITIVE-NODE および兄弟プロジェクトである
-HYDRA-UMC-VOICE-UI、HYDRA-UMC-SEMANTIC-PLANNER、HYDRA-UMC-DOCS-QA）の
-外に他の関連を持ちません。
+より大きなロボティクスエコシステムの一部です。
+
+### ファミリー
+
+**親:** **[HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE)** —— このエンジンの共有 HydraOS イメージ/重みを所有し、認知ワークフローに組み込む統合ハブ。
+
+**兄弟:**
+- **[HYDRA-UMC-VOICE-UI](https://github.com/JuanenRac/HYDRA-UMC-VOICE-UI)** —— このエンジンも供給する同じプランナー向けの STT/TTS ゲートウェイ。
+- **[HYDRA-UMC-SEMANTIC-PLANNER](https://github.com/JuanenRac/HYDRA-UMC-SEMANTIC-PLANNER)** —— このエンジンのアクショントークンが供給される LLM プランナー。
+- **[HYDRA-UMC-DOCS-QA](https://github.com/JuanenRac/HYDRA-UMC-DOCS-QA)** —— 同じプランナーを技術マニュアルに基づかせる RAG アシスタント。
+
+本エンジンは、上記で既に説明した自身のファミリーの外に他の関連を持ちません。
 
 ### エコシステムのその他のプロジェクト
 
