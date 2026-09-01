@@ -305,6 +305,7 @@ Questo motore non ha relazioni al di fuori della propria famiglia oltre a quanto
 ## 👤 AUTORE
 **JuanenRac** (Electro Hobby 3D)
 📧 electrohobby3d@gmail.com
+📺 [youtube.com/@electrohobby3d](https://youtube.com/@electrohobby3d)
 
 ## 📜 LICENZA
 GPL-3.0 - Vedere LICENSE per i dettagli.

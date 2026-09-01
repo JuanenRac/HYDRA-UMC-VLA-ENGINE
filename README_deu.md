@@ -306,6 +306,7 @@ Diese Engine hat außer der bereits oben beschriebenen eigenen Familie keine wei
 ## 👤 AUTOR
 **JuanenRac** (Electro Hobby 3D)
 📧 electrohobby3d@gmail.com
+📺 [youtube.com/@electrohobby3d](https://youtube.com/@electrohobby3d)
 
 ## 📜 LIZENZ
 GPL-3.0 - Siehe LICENSE für Details.
