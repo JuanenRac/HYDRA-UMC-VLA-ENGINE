@@ -222,7 +222,7 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ---
 
-## 🚀 ROADMAP
+## 🚀 FEUILLE DE ROUTE
 * **Phase 1 :** Déploiement du moteur VLA et traitement des entrées multimodales sur Hailo-10.
 * **Phase 2 :** Intégration du planificateur sémantique avec des modèles de comportement en essaim et une mémoire à long terme.
 * **Phase 3 :** Exécution locale à faible latence de l'interface vocale et suppression du bruit industriel.
