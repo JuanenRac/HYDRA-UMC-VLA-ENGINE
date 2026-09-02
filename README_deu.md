@@ -218,7 +218,7 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## ✅ Aktueller Status & Nächste Schritte
 
-**Heute real:** die Aktions-Token-Kodierung/-Dekodierung und die Trajektoriengenerierung (`action_tokens.py`, `trajectory.py`) - die Schritte "Aktions-Token" und "Trajektoriengenerator" im obigen Ablaufdiagramm - plus eine echte HailoRT-Integrationsgrenze (`hailo_runtime.py`), bereit für ein echtes `.hef`-Modell und ein Hailo-10-Modul, sobald diese existieren. 53 Tests und eine echte CLI.
+**Heute real:** die Aktions-Token-Kodierung/-Dekodierung und die Trajektoriengenerierung (`action_tokens.py`, `trajectory.py`) - die Schritte "Aktions-Token" und "Trajektoriengenerator" im obigen Ablaufdiagramm - plus eine echte HailoRT-Integrationsgrenze (`hailo_runtime.py`), bereit für ein echtes `.hef`-Modell und ein Hailo-10-Modul, sobald diese existieren. 64 Tests und eine echte CLI.
 
 **Noch offen, und blockiert durch echte Hardware/ein echtes Modell:** tatsächlich Inferenz auszuführen braucht ein echtes, kompiliertes VLA-`.hef`-Modell (OpenVLA/RT-2 quantisiert für Hailo-10 - noch kein konkretes Modell gewählt) und ein angeschlossenes physisches Hailo-10-Modul, beides echte, unvermeidliche Blocker, die `hailo_runtime.py` allein nicht beseitigen kann - aber ein Modell zu laden und zu dekodieren, sobald es existiert, ist kein ungeschriebener Code mehr.
 
