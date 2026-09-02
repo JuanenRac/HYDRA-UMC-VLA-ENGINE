@@ -25,6 +25,7 @@ Diese Engine ermöglicht es dem Roboter, Befehle wie "nimm die blaue Komponente 
 ### Hauptmerkmale:
 * ✅ **Echtes v0 - Aktions-Token & Trajektorie:** `action_tokens.py` implementiert das OpenVLA/RT-2-artige 256-Bin-Diskretisierungsschema (kontinuierliche Aktion <-> diskretes Token, gemäß dem 7-Freiheitsgrad-Aktionsraum - Pose-Delta + Greifer), und `trajectory.py` integriert eine dekodierte Aktionssequenz zu einer absoluten Posen-Trajektorie. Über `tokens encode`/`tokens decode`/`trajectory integrate` unten verfügbar - kein VLA-Modell oder Hailo-10-NPU nötig, um es auszuführen oder zu testen.
 * 📜 **Modell-Manifest + Ausgabevalidierung:** Ein echter, versionierter Vertrag (`model_manifest.py`), den jede zukünftige Modellintegration erfüllen muss - passende Aktions-/Vokabularform und eine bekannte Hailo-Chipfamilie - plus Form-/Konfidenzvalidierung für die rohe Inferenzausgabe eines Modells. *(implementiert)*
+* 🔌 **HailoRT-Integrationsgrenze, dem Modul vorausgehend vorbereitet:** `hailo_runtime.py` ist gegen die echte, bestätigte `hailo_platform`-API (`VDevice`, `HEF`, `ConfigureParams`, `InputVStreamParams`/`OutputVStreamParams`) geschrieben - lazy importiert, sodass dieses Repository ohne installiertes `hailort`-Paket oder vorhandenes Hailo-10-Modul sauber installiert/getestet wird, und `hailo_output_to_tokens()` (der Teil, der ein echtes Inferenzergebnis auf den eigenen Token-Vertrag dieser Engine abbildet) ist heute vollständig unit-getestet. *(implementiert, nur Integrationsgrenze - siehe unten)*
 * 🩺 **Ehrlicher `status`-Subbefehl:** Meldet die tatsächliche Verfügbarkeit von Beschleuniger/Modellgewichten - `no_accelerator`, `no_model_weights`, oder `hardware_ready_no_inference` - niemals einen falschen "bereit"-Zustand. *(implementiert)*
 * 🌉 **Semantische Steuerung (geplant):** Direktes Mapping von Pixeln und Text auf Gelenkpositionen oder Werkzeugbefehle. *(benötigt ein echtes VLA-Modell - zukünftige Arbeit.)*
 * ⚡ **Echtzeit-Denken (geplant):** Hailo-10 beschleunigte Inferenz für die Aktionsgenerierung mit niedriger Latenz. *(benötigt die echte Hailo-10-NPU, die diese Umgebung nicht hat.)*
@@ -78,6 +79,7 @@ neben seinen drei Geschwistern (Voice-UI, Semantic-Planner, Docs-QA) ein:
   liefert v0 dieses Stück (`action_tokens.py`, `trajectory.py`) zuerst.
   Die echte VLA-Inferenz benötigt die Modellgewichte und die
   Hailo-10-Hardware, die diese Umgebung nicht hat, und folgt später.
+* **Warum `hailo_runtime.py` `hailo_platform` lazy importiert, innerhalb nur zweier Funktionen.** `hailort` ist nicht auf PyPI und nicht auf dieser Entwicklungsmaschine installiert - es beim Modul-Laden zu importieren würde dazu führen, dass dieses gesamte Paket überall außer auf einer Maschine mit einem echten angeschlossenen Hailo-Modul nicht installiert/importiert werden könnte. Nur `open_vdevice()` und `load_hailo_vla_model()` (die beiden Funktionen, die wirklich echtes HailoRT brauchen) importieren es, und zwar lazy; beide werfen einen klaren `HailoNotAvailableError` statt eines bloßen `ImportError`, wenn es fehlt. Dasselbe Muster, das dieses Ökosystem bereits für jeden anderen echten Hardware-Transport verwendet (GRBL seriell, MAVLink, SPI-OTA, ...).
 * **Wie sich das in den Rest des Ökosystems einfügt.** Diese Engine
   wandelt rohe Wahrnehmung (Kameraframes, konzeptionell von
   HYDRA-UMC-VISION-NODE vorgelagert weitergeleitet) und
@@ -120,6 +122,7 @@ HYDRA-UMC-VLA-ENGINE/
 │   ├── trajectory.py           # Aktionssequenz -> Posen-Trajektorie Integration
 │   ├── model_manifest.py       # Echter Modellformvertrag + Inferenzausgabe-Validierung
 │   ├── hardware.py             # Echte Beschleuniger-/Modellgewicht-Verfügbarkeitsprüfungen
+│   ├── hailo_runtime.py        # Echte HailoRT-Integrationsgrenze (hailo_platform), lazy importiert
 │   └── main.py                 # CLI-Einstiegspunkt (nackter Aufruf + `tokens`/`trajectory`/`status`)
 ├── tests/                      # Echte pytest-Suite (action_tokens, trajectory, manifest, hardware, CLI)
 ├── docs/                       # Dokumentation und Benchmarks
@@ -215,9 +218,9 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## ✅ Aktueller Status & Nächste Schritte
 
-**Heute real:** die Aktions-Token-Kodierung/-Dekodierung und die Trajektoriengenerierung (`action_tokens.py`, `trajectory.py`) - die Schritte "Aktions-Token" und "Trajektoriengenerator" im obigen Ablaufdiagramm - mit 19 Tests und einer echten CLI.
+**Heute real:** die Aktions-Token-Kodierung/-Dekodierung und die Trajektoriengenerierung (`action_tokens.py`, `trajectory.py`) - die Schritte "Aktions-Token" und "Trajektoriengenerator" im obigen Ablaufdiagramm - plus eine echte HailoRT-Integrationsgrenze (`hailo_runtime.py`), bereit für ein echtes `.hef`-Modell und ein Hailo-10-Modul, sobald diese existieren. 53 Tests und eine echte CLI.
 
-**Noch offen, und blockiert durch echte Hardware/Modellgewichte:** die echte VLA-Modellinferenz (OpenVLA/RT-2 quantisiert für Hailo-10), die die Token erzeugen würde, die dieses v0 bereits dekodieren kann.
+**Noch offen, und blockiert durch echte Hardware/ein echtes Modell:** tatsächlich Inferenz auszuführen braucht ein echtes, kompiliertes VLA-`.hef`-Modell (OpenVLA/RT-2 quantisiert für Hailo-10 - noch kein konkretes Modell gewählt) und ein angeschlossenes physisches Hailo-10-Modul, beides echte, unvermeidliche Blocker, die `hailo_runtime.py` allein nicht beseitigen kann - aber ein Modell zu laden und zu dekodieren, sobald es existiert, ist kein ungeschriebener Code mehr.
 
 ---
 
