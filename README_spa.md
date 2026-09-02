@@ -121,14 +121,17 @@ HYDRA-UMC-VLA-ENGINE/
 │   ├── model_manifest.py       # Contrato real de forma de modelo + validación de salida de inferencia
 │   ├── hardware.py             # Sondas reales de disponibilidad de acelerador/pesos de modelo
 │   ├── hailo_runtime.py        # Limite real de integracion HailoRT (hailo_platform), importada de forma perezosa
+│   ├── api.py                  # Superficie JSON/HTTP plana (http.server de stdlib) sobre tokens/trayectoria/estado
 │   └── main.py                 # Entry point CLI (invocacion desnuda + `tokens`/`trajectory`/`status`)
-├── tests/                      # Suite pytest real (action_tokens, trajectory, manifest, hardware, CLI)
+├── tests/                      # Suite pytest real (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)
 ├── docs/                       # Documentación y benchmarks
 ├── images/                     # Medios y diagramas
-├── scripts/                    # Scripts de utilidad
+├── systemd/
+│   └── hydra-umc-vla-engine.service  # Unidad systemd de la API local de tokenización/trayectoria en la CM5
 ├── build/                      # Salida de build local (ignorada por git)
 ├── pyproject.toml              # Metadatos del paquete (versión con incremento cuentakilómetros)
-├── bump_version.py             # Incremento de versión estilo cuentakilómetros (usado por build.sh/.bat)
+├── bump_version.py             # Incremento de versión nativa estilo cuentakilómetros (usado por build.sh/.bat)
+├── bump_manifest_version.py    # Sincroniza la versión de hydra-umc.project.json con la nativa (--sync)
 ├── build.sh / build.bat        # Crea el venv, instala (con extras dev), verifica la importación, ejecuta tests
 └── run.sh / run.bat            # Ejecuta el punto de entrada
 ```

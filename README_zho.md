@@ -80,14 +80,17 @@ HYDRA-UMC-VLA-ENGINE/
 │   ├── model_manifest.py       # 真实的模型形状契约 + 推理输出验证
 │   ├── hardware.py             # 真实的加速器/模型权重可用性探测
 │   ├── hailo_runtime.py        # 真实的 HailoRT（hailo_platform）集成边界，延迟导入
+│   ├── api.py                  # 简洁的 JSON/HTTP 接口(基于 stdlib http.server),桥接 tokens/trajectory/status
 │   └── main.py                 # CLI 入口点（裸调用 + `tokens`/`trajectory`/`status`）
-├── tests/                      # 真实 pytest 套件（action_tokens、trajectory、manifest、hardware、CLI）
+├── tests/                      # 真实 pytest 套件（action_tokens、trajectory、manifest、hardware、hailo_runtime、api、CLI）
 ├── docs/                       # 文档与基准测试
 ├── images/                     # 媒体与图表
-├── scripts/                    # 实用脚本
+├── systemd/
+│   └── hydra-umc-vla-engine.service  # 本地 CM5 令牌化/轨迹 API 的 systemd 单元
 ├── build/                      # 本地构建输出（已被 git 忽略）
 ├── pyproject.toml              # 包元数据（里程表式递增版本号）
-├── bump_version.py             # 里程表式版本递增（由 build.sh/.bat 使用）
+├── bump_version.py             # 原生版本的里程表式递增（由 build.sh/.bat 使用）
+├── bump_manifest_version.py    # 将 hydra-umc.project.json 的版本与原生版本同步(--sync)
 ├── build.sh / build.bat        # 创建 venv、安装（含 dev 附加项）、验证导入、运行测试
 └── run.sh / run.bat            # 运行入口点
 ```

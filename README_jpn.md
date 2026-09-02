@@ -83,14 +83,17 @@ HYDRA-UMC-VLA-ENGINE/
 │   ├── model_manifest.py       # 実際のモデル形状契約 + 推論出力検証
 │   ├── hardware.py             # 実際のアクセラレータ/モデルの重みの可用性プローブ
 │   ├── hailo_runtime.py        # 実際のHailoRT(hailo_platform)統合境界、遅延インポート
+│   ├── api.py                  # シンプルなJSON/HTTPサーフェス(stdlibのhttp.server)。tokens/trajectory/statusを橋渡し
 │   └── main.py                 # CLI エントリポイント（素の呼び出し + `tokens`/`trajectory`/`status`）
-├── tests/                      # 実際の pytest スイート（action_tokens、trajectory、manifest、hardware、CLI）
+├── tests/                      # 実際の pytest スイート（action_tokens、trajectory、manifest、hardware、hailo_runtime、api、CLI）
 ├── docs/                       # ドキュメントとベンチマーク
 ├── images/                     # メディアと図表
-├── scripts/                    # ユーティリティスクリプト
+├── systemd/
+│   └── hydra-umc-vla-engine.service  # ローカルCM5上のトークン化/軌道APIのsystemdユニット
 ├── build/                      # ローカルビルド出力（git 管理外）
 ├── pyproject.toml              # パッケージメタデータ（オドメーター式バージョン）
-├── bump_version.py             # オドメーター式バージョンインクリメント（build.sh/.bat が使用）
+├── bump_version.py             # ネイティブバージョンのオドメーター式インクリメント（build.sh/.bat が使用）
+├── bump_manifest_version.py    # hydra-umc.project.json のバージョンをネイティブ版と同期(--sync)
 ├── build.sh / build.bat        # venv 作成、インストール（dev エクストラ付き）、インポート検証、テスト実行
 └── run.sh / run.bat            # エントリポイントを実行
 ```
