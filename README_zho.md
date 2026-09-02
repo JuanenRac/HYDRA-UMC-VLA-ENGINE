@@ -119,7 +119,7 @@ run.bat
 `bump_version.py`）。`run.sh`（裸调用）的预期输出：
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.0.4
+HYDRA-UMC-VLA-ENGINE v0.1.0
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

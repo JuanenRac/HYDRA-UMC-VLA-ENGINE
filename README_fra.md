@@ -166,7 +166,7 @@ kilométrique, voir `bump_version.py`) avant chaque build réel. Sortie
 attendue de `run.sh` (invocation nue) :
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.0.4
+HYDRA-UMC-VLA-ENGINE v0.1.0
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 
