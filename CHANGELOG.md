@@ -22,8 +22,7 @@ bumped manually only. See `bump_version.py`.
   build-tested (no Docker runtime on this dev machine) - every
   path/flag matches the one already verified live on the real CM5.
 - **`trajectory.py`'s `integrate_trajectory()` now wraps accumulated
-  roll/pitch/yaw** to `(-pi, pi]` - found in an ecosystem-wide
-  software-improvements audit: it used to accumulate angles by plain
+  roll/pitch/yaw** to `(-pi, pi]` - it used to accumulate angles by plain
   addition with no wraparound, unlike sibling
   HYDRA-UMC-VISUAL-SERVOING-API's own shortest-turn wrapping (`pose.py`/
   `servo.py`). A long action sequence (continuous wrist rotation) used to
@@ -45,7 +44,7 @@ bumped manually only. See `bump_version.py`.
 
 ## [0.1.1] - An overflowing accumulation no longer returns an infinite pose (VLA-01)
 
-Found in an ecosystem-wide software-improvements audit, P1: `_require_finite`
+A code-quality review found that `_require_finite`
 only ever validated the RAW inputs (`start`'s own fields, each action's own
 7 values) - two individually finite values (e.g. `start.x=1e308`,
 `dx=1e308`) can still silently overflow to `inf` when accumulated (`float
@@ -142,7 +141,7 @@ command).
   the two drifting apart. Fixed via the real, intended sequence
   (`bump_version.py` then `bump_manifest_version.py --sync`).
 
-## [0.0.6] - Fixed after a live ecosystem bug audit
+## [0.0.6] - Fixed a README example that did not match the real code
 
 - **`README.md`** - the `tokens decode` example's shown output didn't
   reproduce with the real code: decoding the exact tokens from the
