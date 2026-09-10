@@ -45,8 +45,8 @@ def _require_finite(value: object, label: str) -> float:
 
 
 def _wrap_angle(value: float) -> float:
-    """Normalize an angle to (-pi, pi] - found in an ecosystem-wide
-    software-improvements audit: this repo's own angle accumulation had no
+    """Normalize an angle to (-pi, pi] - found while auditing the code:
+    this repo's own angle accumulation had no
     wraparound, unlike sibling HYDRA-UMC-VISUAL-SERVOING-API's own
     shortest-turn wrapping (servo.py's `_wrap_angle_diff`). A long action
     sequence (continuous wrist rotation) would otherwise hand a downstream
@@ -85,8 +85,7 @@ def integrate_trajectory(
             _require_finite(value, f"action {step}[{index}]")
             for index, value in enumerate(action)
         )
-        # VLA-01 (found in an ecosystem-wide software-improvements audit,
-        # P1): _require_finite above only ever checked the RAW inputs
+        # VLA-01 (P1): _require_finite above only ever checked the RAW inputs
         # (start's own fields, each action's own 7 values) - two
         # perfectly finite values (e.g. start.x=1e308, dx=1e308) can
         # still silently overflow to inf when ACCUMULATED (float + never

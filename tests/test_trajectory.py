@@ -56,7 +56,7 @@ def test_non_finite_start_pose_is_rejected():
         integrate_trajectory(start, [])
 
 
-# VLA-01 (found in an ecosystem-wide software-improvements audit, P1):
+# VLA-01 (P1):
 # individually-finite inputs whose ACCUMULATED sum overflows to inf.
 
 def test_accumulated_linear_overflow_is_rejected_not_returned_as_infinite():
@@ -102,7 +102,7 @@ def test_rotation_deltas_accumulate():
 
 
 def test_rotation_wraps_instead_of_growing_without_bound():
-    # Found in an ecosystem-wide software-improvements audit: continuous
+    # Found while auditing the code: continuous
     # wrist rotation (many small yaw deltas in the same direction) used to
     # accumulate as a plain sum with no wraparound, unlike sibling
     # HYDRA-UMC-VISUAL-SERVOING-API's own shortest-turn angle wrapping. A
