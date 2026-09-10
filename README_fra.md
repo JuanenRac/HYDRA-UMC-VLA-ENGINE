@@ -180,7 +180,7 @@ Exemple réel - encoder une action en jetons, la décoder, et intégrer une cour
 # 179,51,153,192,76,153,179
 
 ./run.sh tokens decode --tokens "179,51,153,192,76,153,179"
-# 0.020117,-0.030273,0.005273,0.050977,-0.037891,0.019922,0.699219
+# 0.020117,-0.029883,0.009961,0.050391,-0.040234,0.019922,0.701172
 
 ./run.sh trajectory integrate --start "0,0,0,0,0,0" --actions actions.json
 # step 0: x=0.000000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.000000
