@@ -14,6 +14,8 @@
   <img src="https://img.shields.io/badge/Aceleración-Hailo--10-green.svg" alt="Hailo-10">
 </p>
 
+**Comprobación de honestidad - lo que realmente funciona hoy:** la codificación/decodificación de tokens de acción (`action_tokens.py`), la integración de trayectorias con envoltura real de ángulos (`trajectory.py`), el contrato de forma/confianza del manifiesto de modelo (`model_manifest.py`), la comprobación honesta del estado del hardware en `status` (`hardware.py`), la superficie JSON/HTTP (`api.py`) y el límite de integración con HailoRT (`hailo_runtime.py`) son reales y están probados - 69 tests que pasan (`pytest tests/`). Nada de esto necesita un modelo VLA ni una NPU Hailo-10 para ejecutarse o probarse - `tokens encode`/`tokens decode`/`trajectory integrate`/`status` funcionan hoy contra datos sintéticos, y `status` informa deliberadamente `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference` en vez de un falso "ready". El nuevo `Dockerfile` reutiliza los mismos flags de CLI ya verificados en vivo en el systemd unit real de la CM5, pero no ha sido probado en build por sí mismo - esta máquina de desarrollo no tiene runtime de Docker. La inferencia real de un modelo VLA, el control semántico y la generalización zero-shot siguen siendo pura aspiración: todavía no se ha elegido ningún modelo, y este entorno no tiene un módulo Hailo-10 físico donde ejecutarlo. Consulta `CHANGELOG.md` para ver exactamente qué se ha entregado hasta ahora, y la propia lista de características de la sección 1 más abajo para el desglose real/futuro por característica.
+
 ---
 
 ## 1. 🛠️ VISIÓN GENERAL TÉCNICA
