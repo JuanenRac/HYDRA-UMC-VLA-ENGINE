@@ -170,7 +170,7 @@ run.bat
 (nackter Aufruf):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.1
+HYDRA-UMC-VLA-ENGINE v0.1.2
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 
@@ -182,7 +182,11 @@ Echtes Beispiel - eine Aktion in Token kodieren, zurück dekodieren, und eine ku
 
 ./run.sh tokens decode --tokens "179,51,153,192,76,153,179"
 # 0.020117,-0.029883,0.009961,0.050391,-0.040234,0.019922,0.701172
+# (nicht identisch mit der obigen Encode-Eingabe - die 256-Bin-Diskretisierung
+# ist absichtlich verlustbehaftet, decode liefert den Mittelpunkt des Bins
+# zurück, nicht den exakten Originalwert)
 
+echo '[[0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], [0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 1.0]]' > actions.json
 ./run.sh trajectory integrate --start "0,0,0,0,0,0" --actions actions.json
 # step 0: x=0.000000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.000000
 # step 1: x=0.010000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.500000

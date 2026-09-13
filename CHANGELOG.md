@@ -42,6 +42,20 @@ bumped manually only. See `bump_version.py`.
   a non-physical trajectory that a later integration might mistake as usable.
 - Added CLI and trajectory tests for malformed and non-finite values.
 
+## [0.1.2] - H040: the decode/trajectory example was incomplete in 6 languages
+
+- The `tokens decode` -> `trajectory integrate` walkthrough (all 6
+  translated READMEs) jumped straight from the decoded numbers to
+  `trajectory integrate --actions actions.json` without ever creating
+  that file, and without the English README's own explanation of why
+  the decoded values differ from the encode input (the 256-bin
+  discretization is lossy by design; decode recovers the bin's
+  midpoint, not the exact original value). A reader following any
+  non-English README had no way to know where `actions.json` came from.
+  Added the missing `echo '[[...]]' > actions.json` line and a
+  translated version of the midpoint explanation to all 6 languages,
+  matching the English README exactly.
+
 ## [0.1.1] - An overflowing accumulation no longer returns an infinite pose (VLA-01)
 
 A code-quality review found that `_require_finite`
