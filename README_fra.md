@@ -171,7 +171,7 @@ kilométrique, voir `bump_version.py`) avant chaque build réel. Sortie
 attendue de `run.sh` (invocation nue) :
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.1
+HYDRA-UMC-VLA-ENGINE v0.1.2
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 
@@ -183,7 +183,11 @@ Exemple réel - encoder une action en jetons, la décoder, et intégrer une cour
 
 ./run.sh tokens decode --tokens "179,51,153,192,76,153,179"
 # 0.020117,-0.029883,0.009961,0.050391,-0.040234,0.019922,0.701172
+# (pas identique à l'entrée d'encodage ci-dessus - la discrétisation à 256
+# bins est intentionnellement destructrice, decode récupère le point médian
+# du bin, pas la valeur d'origine exacte)
 
+echo '[[0.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5], [0.0, 0.01, 0.0, 0.0, 0.0, 0.0, 1.0]]' > actions.json
 ./run.sh trajectory integrate --start "0,0,0,0,0,0" --actions actions.json
 # step 0: x=0.000000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.000000
 # step 1: x=0.010000 y=0.000000 z=0.000000 roll=0.000000 pitch=0.000000 yaw=0.000000 gripper=0.500000
