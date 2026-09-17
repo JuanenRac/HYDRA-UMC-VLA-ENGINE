@@ -147,3 +147,23 @@ def test_malformed_json_body_rejected(tmp_path: Path) -> None:
             assert False, "expected HTTPError"
         except urllib.error.HTTPError as e:
             assert e.code == 400
+
+
+def test_oversized_content_length_rejected(tmp_path: Path) -> None:
+    # Real regression: _read_json_body() used to read a caller-controlled
+    # Content-Length with no upper bound at all - a client claiming a
+    # multi-gigabyte body would make the handler block reading (and
+    # buffering) that many bytes. This sends a real, just-over-the-limit
+    # body (still small - just over 1 MiB, not gigabytes) and proves the
+    # server rejects it with a clean 400 rather than accepting it.
+    from hydra_umc_vla_engine.api import MAX_BODY_BYTES
+
+    with running_server(tmp_path) as base:
+        oversized = b"x" * (MAX_BODY_BYTES + 1)
+        req = urllib.request.Request(f"{base}/tokens/encode", data=oversized, method="POST")
+        try:
+            urllib.request.urlopen(req, timeout=5)
+            assert False, "expected HTTPError"
+        except urllib.error.HTTPError as e:
+            assert e.code == 400
+            assert "0-" in e.read().decode()

@@ -5,8 +5,13 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
-## [Unreleased] - finite VLA trajectory input gate
+## [0.1.3] - finite VLA trajectory input gate, and a real Content-Length cap on the HTTP API
 
+- **`api.py`'s `_read_json_body()` no longer trusts a caller-controlled `Content-Length` with no upper
+  bound** - a lying/oversized header could force unbounded memory buffering (the same real DoS/OOM class
+  already closed in this family's sibling `api.py` modules, e.g. HYDRA-UMC-ANOMALY-DETECTOR's own). Now
+  capped at 1 MiB with a clean `400` instead of blocking on an unbounded read. New regression test proves
+  a real just-over-the-limit POST is rejected.
 - **New `Dockerfile`**, closing the real gap HYDRA-UMC-COGNITIVE-NODE's
   own `docker-compose.yml` named ("do not have published Dockerfiles
   yet"). Same `--addr`/`--port` CLI the real CM5 systemd unit

@@ -43,8 +43,27 @@ def _write_error(handler: BaseHTTPRequestHandler, status: int, message: str) -> 
     _write_json(handler, status, {"error": message})
 
 
+# Real fix: this used to read a caller-controlled Content-Length with no
+# upper bound at all - a lying/oversized header could force unbounded
+# memory buffering (same real DoS/OOM class already closed in this
+# family's other api.py files, e.g. HYDRA-UMC-ANOMALY-DETECTOR's own).
+MAX_BODY_BYTES = 1024 * 1024
+# How much of an oversized body this drains before responding - lets the
+# client finish sending before the response goes out (same reasoning as
+# the sibling api.py modules that already do this), without ever holding
+# more than one bounded read in memory.
+DRAIN_CAP_BYTES = MAX_BODY_BYTES * 16
+
+
 def _read_json_body(handler: BaseHTTPRequestHandler) -> dict:
-    length = int(handler.headers.get("Content-Length", "0") or "0")
+    try:
+        length = int(handler.headers.get("Content-Length", "0") or "0")
+    except ValueError as error:
+        raise ValueError("Content-Length must be an integer") from error
+    if length < 0 or length > MAX_BODY_BYTES:
+        if 0 <= length <= DRAIN_CAP_BYTES:
+            handler.rfile.read(length)
+        raise ValueError(f"request body must contain 0-{MAX_BODY_BYTES} bytes")
     raw = handler.rfile.read(length) if length > 0 else b"{}"
     return json.loads(raw)
 
@@ -83,6 +102,9 @@ class Handler(BaseHTTPRequestHandler):
             body = _read_json_body(self)
         except json.JSONDecodeError as e:
             _write_error(self, 400, f"malformed JSON body: {e}")
+            return
+        except ValueError as e:
+            _write_error(self, 400, str(e))
             return
         if path == "/tokens/encode":
             self._handle_encode(body)
