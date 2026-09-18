@@ -47,7 +47,7 @@ bumped manually only. See `bump_version.py`.
   a non-physical trajectory that a later integration might mistake as usable.
 - Added CLI and trajectory tests for malformed and non-finite values.
 
-## [0.1.2] - H040: the decode/trajectory example was incomplete in 6 languages
+## [0.1.2] - The decode/trajectory example was incomplete in 6 languages
 
 - The `tokens decode` -> `trajectory integrate` walkthrough (all 6
   translated READMEs) jumped straight from the decoded numbers to
