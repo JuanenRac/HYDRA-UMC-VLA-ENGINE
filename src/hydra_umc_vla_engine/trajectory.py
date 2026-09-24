@@ -85,7 +85,7 @@ def integrate_trajectory(
             _require_finite(value, f"action {step}[{index}]")
             for index, value in enumerate(action)
         )
-        # VLA-01 (P1): _require_finite above only ever checked the RAW inputs
+        # _require_finite above only ever checked the RAW inputs
         # (start's own fields, each action's own 7 values) - two
         # perfectly finite values (e.g. start.x=1e308, dx=1e308) can
         # still silently overflow to inf when ACCUMULATED (float + never

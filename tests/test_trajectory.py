@@ -56,7 +56,7 @@ def test_non_finite_start_pose_is_rejected():
         integrate_trajectory(start, [])
 
 
-# VLA-01 (P1):
+# (P1):
 # individually-finite inputs whose ACCUMULATED sum overflows to inf.
 
 def test_accumulated_linear_overflow_is_rejected_not_returned_as_infinite():

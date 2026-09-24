@@ -61,7 +61,7 @@ bumped manually only. See `bump_version.py`.
   translated version of the midpoint explanation to all 6 languages,
   matching the English README exactly.
 
-## [0.1.1] - An overflowing accumulation no longer returns an infinite pose (VLA-01)
+## [0.1.1] - An overflowing accumulation no longer returns an infinite pose
 
 A code-quality review found that `_require_finite`
 only ever validated the RAW inputs (`start`'s own fields, each action's own
