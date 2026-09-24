@@ -5,6 +5,10 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
+## [0.1.4] - Trajectory proposal marker
+
+- POST /trajectory/integrate now returns a proposal block next to the poses: authorized is always false, the fingerprint (SHA-256 of exactly those poses) lets an approval elsewhere name the trajectory it covers, and it states that an authenticated control must approve before any execution.
+
 ## [0.1.3] - finite VLA trajectory input gate, and a real Content-Length cap on the HTTP API
 
 - **`api.py`'s `_read_json_body()` no longer trusts a caller-controlled `Content-Length` with no upper
