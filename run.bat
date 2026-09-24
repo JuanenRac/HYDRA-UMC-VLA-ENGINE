@@ -34,10 +34,10 @@ if exist .venv\Scripts\activate.bat (
 )
 
 python -m hydra_umc_vla_engine.main %*
-exit /b %errorlevel%
 
 REM HYDRA_UMC_SCRIPT_STANDARD_SAFE_PAUSE
 set "HYDRA_UMC_SCRIPT_RESULT=%ERRORLEVEL%"
+:hydra_umc_pause
 echo.
 echo [INFO] Script completed. Exit code: %HYDRA_UMC_SCRIPT_RESULT%.
 pause
