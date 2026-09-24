@@ -167,3 +167,15 @@ def test_oversized_content_length_rejected(tmp_path: Path) -> None:
         except urllib.error.HTTPError as e:
             assert e.code == 400
             assert "0-" in e.read().decode()
+
+
+def test_an_integrated_trajectory_is_a_proposal_bound_to_its_poses(tmp_path: Path) -> None:
+    with running_server(tmp_path) as base:
+        first = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[1, 0, 0, 0, 0, 0, 0]]})[1]
+        again = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[1, 0, 0, 0, 0, 0, 0]]})[1]
+        other = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[2, 0, 0, 0, 0, 0, 0]]})[1]
+    assert first["proposal"]["authorized"] is False
+    assert len(first["proposal"]["fingerprint"]) == 64
+    assert first["proposal"]["fingerprint"] == again["proposal"]["fingerprint"]
+    assert first["proposal"]["fingerprint"] != other["proposal"]["fingerprint"]
+

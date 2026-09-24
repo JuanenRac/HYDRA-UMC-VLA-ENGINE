@@ -13,6 +13,7 @@ that file.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -72,6 +73,22 @@ def _query_params(handler: BaseHTTPRequestHandler) -> dict[str, str]:
     parsed = urlparse(handler.path)
     values = parse_qs(parsed.query, keep_blank_values=True)
     return {key: value[0] for key, value in values.items() if value}
+
+
+def proposal_record(poses: list[dict]) -> dict:
+    """Marks a trajectory as a proposal, never an order.
+
+    The engine only integrates predicted actions into poses; nothing here
+    authorizes moving a machine. `fingerprint` identifies exactly these
+    poses, so an approval given elsewhere can name the trajectory it
+    approves and cannot be reused for a different one.
+    """
+    canonical = json.dumps(poses, sort_keys=True, separators=(",", ":"))
+    return {
+        "authorized": False,
+        "fingerprint": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "requires": "approval by an authenticated control before any execution",
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -156,7 +173,8 @@ class Handler(BaseHTTPRequestHandler):
         except (TokenizationError, TrajectoryError, ValueError, TypeError) as e:
             _write_error(self, 400, str(e))
             return
-        _write_json(self, 200, {"poses": [asdict(p) for p in poses]})
+        pose_dicts = [asdict(p) for p in poses]
+        _write_json(self, 200, {"poses": pose_dicts, "proposal": proposal_record(pose_dicts)})
 
 
 class VlaEngineServer(ThreadingHTTPServer):
