@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Hailo-10">
 </p>
 
-**正直な現状確認 - 実際に今動くもの:** アクショントークンのエンコード/デコード（`action_tokens.py`）、実際の角度ラップアラウンド処理を伴う軌道の積分（`trajectory.py`）、モデルマニフェストの形状/信頼度契約（`model_manifest.py`）、`status` における正直なハードウェア状態チェック（`hardware.py`）、JSON/HTTP インターフェース（`api.py`）、そして HailoRT 統合境界（`hailo_runtime.py`) は本物であり、テストもされている — 69件のテストが通過している（`pytest tests/`）。これらはいずれも VLA モデルや Hailo-10 NPU なしで実行・テストできる — `tokens encode`/`tokens decode`/`trajectory integrate`/`status` は今日、合成データに対してすでに動作しており、`status` は偽の "ready" ではなく `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference` を意図的に報告する。新しい `Dockerfile` は実際の CM5 systemd ユニットですでに検証済みの CLI フラグをそのまま再利用しているが、それ自体はビルドテストされていない — この開発マシンには Docker ランタイムがない。実際の VLA モデル推論、意味的制御、ゼロショット汎化は、まだ純粋な構想にとどまる。モデルはまだ何も選定されておらず、この環境にはそれを実行する物理的な Hailo-10 モジュールもない。これまでに実際に出荷されたものの詳細は `CHANGELOG.md` を、機能ごとの実装済み/将来の内訳は下記セクション1の機能リスト自体を参照。
+**正直な現状確認 - 実際に今動くもの:** アクショントークンのエンコード/デコード（`action_tokens.py`）、実際の角度ラップアラウンド処理を伴う軌道の積分（`trajectory.py`）、モデルマニフェストの形状/信頼度契約（`model_manifest.py`）、`status` における正直なハードウェア状態チェック（`hardware.py`）、JSON/HTTP インターフェース（`api.py`）、そして HailoRT 統合境界（`hailo_runtime.py`) は本物であり、テストもされている — 71件のテストが通過している（`pytest tests/`）。これらはいずれも VLA モデルや Hailo-10 NPU なしで実行・テストできる — `tokens encode`/`tokens decode`/`trajectory integrate`/`status` は今日、合成データに対してすでに動作しており、`status` は偽の "ready" ではなく `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference` を意図的に報告する。新しい `Dockerfile` は実際の CM5 systemd ユニットですでに検証済みの CLI フラグをそのまま再利用しているが、それ自体はビルドテストされていない — この開発マシンには Docker ランタイムがない。実際の VLA モデル推論、意味的制御、ゼロショット汎化は、まだ純粋な構想にとどまる。モデルはまだ何も選定されておらず、この環境にはそれを実行する物理的な Hailo-10 モジュールもない。これまでに実際に出荷されたものの詳細は `CHANGELOG.md` を、機能ごとの実装済み/将来の内訳は下記セクション1の機能リスト自体を参照。
 
 ---
 
@@ -173,7 +173,7 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## ✅ 現在の状況と次のステップ
 
-**現在実装済み：** アクショントークンのエンコード/デコードと軌道生成(`action_tokens.py`、`trajectory.py`)——上のフロー図の「アクショントークン」と「軌道生成器」のステップ——に加えて、実際の `.hef` モデルとHailo-10モジュールが存在し次第使えるように準備された実際のHailoRT統合境界(`hailo_runtime.py`)。テストは69個と実際のCLI。
+**現在実装済み：** アクショントークンのエンコード/デコードと軌道生成(`action_tokens.py`、`trajectory.py`)——上のフロー図の「アクショントークン」と「軌道生成器」のステップ——に加えて、実際の `.hef` モデルとHailo-10モジュールが存在し次第使えるように準備された実際のHailoRT統合境界(`hailo_runtime.py`)。テストは71個と実際のCLI。
 
 **まだ先で、実際のハードウェア/実際のモデルに阻まれている：** 実際に推論を実行するには、実際にコンパイルされたVLA `.hef` モデル(Hailo-10向けに量子化されたOpenVLA/RT-2——まだ具体的なモデルは選定されていません)と、接続された物理的なHailo-10モジュールが必要です。どちらも `hailo_runtime.py` 単体では取り除けない、実在する避けられないブロッカーです——しかし、モデルが存在するようになれば、それを読み込んでデコードすること自体はもはや未実装のコードではありません。
 

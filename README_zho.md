@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Hailo-10">
 </p>
 
-**诚实核查 - 今天真正能运行的部分：** 动作 token 编码/解码（`action_tokens.py`）、带真实角度环绕处理的轨迹积分（`trajectory.py`）、模型清单的形状/置信度契约（`model_manifest.py`）、`status` 中诚实的硬件状态检查（`hardware.py`）、JSON/HTTP 接口（`api.py`），以及 HailoRT 集成边界（`hailo_runtime.py`）都是真实且经过测试的——69 个通过的测试（`pytest tests/`）。这些功能都不需要 VLA 模型或 Hailo-10 NPU 就能运行或测试——`tokens encode`/`tokens decode`/`trajectory integrate`/`status` 如今都能针对合成数据正常工作，并且 `status` 会刻意报告 `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference`，而不是伪装成"ready"。新增的 `Dockerfile` 复用了已经在真实 CM5 systemd 单元上验证过的相同 CLI 参数，但其本身尚未经过构建测试——这台开发机器上没有 Docker 运行时。真正的 VLA 模型推理、语义控制和零样本泛化仍然完全是愿景：目前还没有选定任何模型，而且这个环境也没有可以运行它的实体 Hailo-10 模块。具体已经交付了什么，请参见 `CHANGELOG.md`，以及下文第 1 节自己的功能列表中按功能划分的真实/未来对照。
+**诚实核查 - 今天真正能运行的部分：** 动作 token 编码/解码（`action_tokens.py`）、带真实角度环绕处理的轨迹积分（`trajectory.py`）、模型清单的形状/置信度契约（`model_manifest.py`）、`status` 中诚实的硬件状态检查（`hardware.py`）、JSON/HTTP 接口（`api.py`），以及 HailoRT 集成边界（`hailo_runtime.py`）都是真实且经过测试的——71 个通过的测试（`pytest tests/`）。这些功能都不需要 VLA 模型或 Hailo-10 NPU 就能运行或测试——`tokens encode`/`tokens decode`/`trajectory integrate`/`status` 如今都能针对合成数据正常工作，并且 `status` 会刻意报告 `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference`，而不是伪装成"ready"。新增的 `Dockerfile` 复用了已经在真实 CM5 systemd 单元上验证过的相同 CLI 参数，但其本身尚未经过构建测试——这台开发机器上没有 Docker 运行时。真正的 VLA 模型推理、语义控制和零样本泛化仍然完全是愿景：目前还没有选定任何模型，而且这个环境也没有可以运行它的实体 Hailo-10 模块。具体已经交付了什么，请参见 `CHANGELOG.md`，以及下文第 1 节自己的功能列表中按功能划分的真实/未来对照。
 
 ---
 
@@ -166,7 +166,7 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## ✅ 当前状态与后续步骤
 
-**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 69 个测试和一个真实的 CLI。
+**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 71 个测试和一个真实的 CLI。
 
 **仍待完成，受限于真实硬件/真实模型：** 要真正运行推理,需要一个真实编译好的 VLA `.hef` 模型(为 Hailo-10 量化的 OpenVLA/RT-2——目前尚未选定具体模型)以及一块连接好的物理 Hailo-10 模块,这两者都是 `hailo_runtime.py` 自身无法消除的真实、不可避免的阻碍——但一旦模型存在,加载并解码它就不再是尚未编写的代码了。
 
