@@ -179,3 +179,33 @@ def test_an_integrated_trajectory_is_a_proposal_bound_to_its_poses(tmp_path: Pat
     assert first["proposal"]["fingerprint"] == again["proposal"]["fingerprint"]
     assert first["proposal"]["fingerprint"] != other["proposal"]["fingerprint"]
 
+
+
+def _post_raw(url: str, raw: bytes) -> tuple[int, dict]:
+    req = urllib.request.Request(url, data=raw, headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status, json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        return e.code, json.loads(e.read())
+
+
+def test_a_nan_model_output_is_refused_not_turned_into_the_maximum_movement(tmp_path: Path) -> None:
+    with running_server(tmp_path) as base:
+        # the literal NaN (not valid JSON, but accepted by json.loads), the string "nan" (accepted by float()) and infinity
+        for raw in (b'{"action": [NaN, 0, 0, 0, 0, 0, 0]}', b'{"action": ["nan", 0, 0, 0, 0, 0, 0]}', b'{"action": [Infinity, 0, 0, 0, 0, 0, 0]}', b'{"action": [0, 0, 0, 0, 0, 0, "inf"]}'):
+            status, body = _post_raw(f"{base}/tokens/encode", raw)
+            assert status == 400, raw
+            assert "error" in body
+
+
+def test_a_bad_vocab_size_is_a_400_not_a_crashed_handler(tmp_path: Path) -> None:
+    with running_server(tmp_path) as base:
+        for vocab in (0, -5, 1, 1000000):
+            status, body = _post(f"{base}/tokens/encode", {"action": [0.0] * 7, "vocab_size": vocab})
+            assert status == 400, vocab
+        status, _ = _post(f"{base}/tokens/decode", {"tokens": [0] * 7, "vocab_size": 0})
+        assert status == 400
+        # and the server is still serving
+        status, _ = _post(f"{base}/tokens/encode", {"action": [0.0] * 7})
+        assert status == 200

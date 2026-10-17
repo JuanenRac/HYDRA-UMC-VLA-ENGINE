@@ -16,9 +16,13 @@ hardware-independent real logic this v0 pass covers.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 DEFAULT_VOCAB_SIZE = 256
+# A vocabulary needs at least two bins to say anything, and an absurd one only exhausts memory or loses all resolution.
+MIN_VOCAB_SIZE = 2
+MAX_VOCAB_SIZE = 65536
 
 
 class TokenizationError(ValueError):
@@ -55,6 +59,12 @@ def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
 
 
+def _check_vocab_size(vocab_size: int) -> None:
+    """A vocab_size comes from a request body: 0 or a negative one gives wrong bins (or a ZeroDivisionError), a boolean is not a size."""
+    if isinstance(vocab_size, bool) or not isinstance(vocab_size, int) or not (MIN_VOCAB_SIZE <= vocab_size <= MAX_VOCAB_SIZE):
+        raise TokenizationError(f"vocab_size must be an integer from {MIN_VOCAB_SIZE} to {MAX_VOCAB_SIZE}, got {vocab_size!r}")
+
+
 def encode_action(
     values: tuple[float, ...],
     specs: tuple[ActionSpec, ...] = VLA_ACTION_SPACE,
@@ -66,11 +76,18 @@ def encode_action(
     raw prediction can slightly overshoot a bound, and clamping is what
     lets a downstream consumer still get a usable (saturated) action
     instead of a hard failure over a rounding-sized excess.
+
+    A value that is not a finite number (NaN, infinity) is NOT clamped: clamping a NaN picks the
+    upper bound (max(lo, min(hi, nan)) is hi), so a model that produced NaN would have been
+    encoded as the maximum movement on every axis. It is rejected instead.
     """
+    _check_vocab_size(vocab_size)
     if len(values) != len(specs):
         raise TokenizationError(f"expected {len(specs)} action values, got {len(values)}")
     tokens = []
     for value, spec in zip(values, specs):
+        if not math.isfinite(value):
+            raise TokenizationError(f"{spec.name}: the action value must be a finite number, got {value!r}")
         clamped = _clamp(value, spec.min, spec.max)
         fraction = (clamped - spec.min) / (spec.max - spec.min)
         # fraction in [0, 1] -> bin in [0, vocab_size - 1]; clamp the top
@@ -86,6 +103,7 @@ def decode_action(
     vocab_size: int = DEFAULT_VOCAB_SIZE,
 ) -> tuple[float, ...]:
     """Discrete bin-id tokens -> continuous action values (bin centers)."""
+    _check_vocab_size(vocab_size)
     if len(tokens) != len(specs):
         raise TokenizationError(f"expected {len(specs)} tokens, got {len(tokens)}")
     values = []

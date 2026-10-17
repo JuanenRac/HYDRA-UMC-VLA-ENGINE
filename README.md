@@ -4,7 +4,7 @@
 
 # 👁️ HYDRA-UMC-VLA-ENGINE
 
-<p align="center">🇺🇸 <b>English</b> | <a href="README_spa.md">🇪🇸 Español</a> | <a href="README_fra.md">🇫🇷 Français</a> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 简体中文</a> | <a href="README_jpn.md">🇯🇵 日本語</a></p>
+<p align="center">🇺🇸 <b>English</b> | <a href="README_spa.md">🇪🇸 Español</a> | <a href="README_fra.md">🇫🇷 Français</a> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 简体中文</a> | <a href="README_jpn.md">🇯🇵 日本語</a> | <a href="README_por.md">🇵🇹 Português</a></p>
 
 ### 🤖 Multimodal Vision-Language-Action Framework for Robotics
 
@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Hailo-10">
 </p>
 
-**Honesty check - what actually runs today:** the action-token encode/decode discretization (`action_tokens.py`), trajectory integration with real angle wraparound (`trajectory.py`), the model-manifest shape/confidence contract (`model_manifest.py`), the honest hardware-state `status` check (`hardware.py`), the JSON/HTTP surface (`api.py`), and the HailoRT integration boundary (`hailo_runtime.py`) are real and tested - 71 passing tests (`pytest tests/`). None of that needs a VLA model or a Hailo-10 NPU to run or test - `tokens encode`/`tokens decode`/`trajectory integrate`/`status` all work today against synthetic data, and `status` deliberately reports `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference` rather than a fake "ready". The new `Dockerfile` reuses the same CLI flags already verified live on the real CM5 systemd unit, but has not itself been build-tested - there's no Docker runtime on this development machine. Actual VLA model inference, semantic control, and zero-shot generalization are still pure aspiration: no model has been chosen yet, and this environment has no physical Hailo-10 module to run one on. See `CHANGELOG.md` for exactly what has shipped so far, and section 1's own feature list below for the per-feature real/future breakdown.
+**Honesty check - what actually runs today:** the action-token encode/decode discretization (`action_tokens.py`), trajectory integration with real angle wraparound (`trajectory.py`), the model-manifest shape/confidence contract (`model_manifest.py`), the honest hardware-state `status` check (`hardware.py`), the JSON/HTTP surface (`api.py`), and the HailoRT integration boundary (`hailo_runtime.py`) are real and tested - 85 passing tests (`pytest tests/`). None of that needs a VLA model or a Hailo-10 NPU to run or test - `tokens encode`/`tokens decode`/`trajectory integrate`/`status` all work today against synthetic data, and `status` deliberately reports `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference` rather than a fake "ready". The new `Dockerfile` reuses the same CLI flags already verified live on the real CM5 systemd unit, but has not itself been build-tested - there's no Docker runtime on this development machine. Actual VLA model inference, semantic control, and zero-shot generalization are still pure aspiration: no model has been chosen yet, and this environment has no physical Hailo-10 module to run one on. See `CHANGELOG.md` for exactly what has shipped so far, and section 1's own feature list below for the per-feature real/future breakdown.
 
 ---
 
@@ -26,6 +26,7 @@ This engine allows the robot to understand commands such as "pick the blue compo
 
 ### Key Features:
 * ✅ **Real v0 - action tokens & trajectory:** `action_tokens.py` implements the OpenVLA/RT-2-style 256-bin discretization scheme (continuous action <-> discrete token, per the 7-DOF pose-delta + gripper action space), and `trajectory.py` integrates a decoded action sequence into an absolute pose trajectory. Exposed via `tokens encode`/`tokens decode`/`trajectory integrate` below - no VLA model or Hailo-10 NPU needed to run or test it.
+* 🧯 **A non-number never becomes a movement:** `encode_action` rejects NaN and infinity (clamping a NaN picked the upper bound, so a model that produced NaN was encoded as the maximum movement on every axis), a `vocab_size` outside 2-65536 is refused, and the HTTP API rejects the JSON literals `NaN`/`Infinity` and the strings `"nan"`/`"inf"` with `400`. *(implemented)*
 * 📜 **Model manifest + output validation:** A real, versioned contract (`model_manifest.py`) any future model integration must satisfy - matching action/vocab shape and a known Hailo chip family - plus shape/confidence validation for a model's raw inference output. *(implemented)*
 * 🔌 **HailoRT integration boundary, prepared ahead of the module:** `hailo_runtime.py` is written against the real, confirmed `hailo_platform` API (`VDevice`, `HEF`, `ConfigureParams`, `InputVStreamParams`/`OutputVStreamParams`) - lazily imported so this repo installs/tests cleanly with no `hailort` package or Hailo-10 module present, and `hailo_output_to_tokens()` (the piece that maps a real inference result onto this engine's own token contract) is fully unit-tested today. *(implemented, integration boundary only - see below)*
 * 🩺 **Honest `status` subcommand:** Reports real accelerator/model-weight availability - `no_accelerator`, `no_model_weights`, or `hardware_ready_no_inference` - never a fake "ready" state. *(implemented)*
@@ -166,7 +167,7 @@ run.bat
 (bare invocation):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.4
+HYDRA-UMC-VLA-ENGINE v0.1.5
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 
@@ -221,7 +222,7 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## ✅ Current Status & Next Steps
 
-**Real today:** action-token encoding/decoding and trajectory generation (`action_tokens.py`, `trajectory.py`) - the "Action Tokens" and "Trajectory Generator" steps in the flow diagram above - plus a real HailoRT integration boundary (`hailo_runtime.py`) ready for a real `.hef` model and a Hailo-10 module the moment they exist. 71 tests and a real CLI.
+**Real today:** action-token encoding/decoding and trajectory generation (`action_tokens.py`, `trajectory.py`) - the "Action Tokens" and "Trajectory Generator" steps in the flow diagram above - plus a real HailoRT integration boundary (`hailo_runtime.py`) ready for a real `.hef` model and a Hailo-10 module the moment they exist. 85 tests and a real CLI.
 
 **Still ahead, and blocked on real hardware/a real model:** actually running inference needs a real compiled `.hef` VLA model (OpenVLA/RT-2 quantized for Hailo-10 - no specific model chosen yet) and a physical Hailo-10 module attached, both real, unavoidable blockers `hailo_runtime.py` cannot remove on its own - but loading and decoding one, once it exists, is no longer unwritten code.
 

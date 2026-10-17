@@ -4,7 +4,7 @@
 
 # 👁️ HYDRA-UMC-VLA-ENGINE
 
-<p align="center"><a href="README.md">🇺🇸 English</a> | <a href="README_spa.md">🇪🇸 Español</a> | 🇫🇷 <b>Français</b> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 简体中文</a> | <a href="README_jpn.md">🇯🇵 日本語</a></p>
+<p align="center"><a href="README.md">🇺🇸 English</a> | <a href="README_spa.md">🇪🇸 Español</a> | 🇫🇷 <b>Français</b> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 简体中文</a> | <a href="README_jpn.md">🇯🇵 日本語</a> | <a href="README_por.md">🇵🇹 Português</a></p>
 
 ### 🤖 Framework Multimodal Vision-Language-Action pour la Robotique
 
@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Accélération-Hailo--10-green.svg" alt="Hailo-10">
 </p>
 
-**Vérification d'honnêteté - ce qui fonctionne réellement aujourd'hui :** l'encodage/décodage des tokens d'action (`action_tokens.py`), l'intégration de trajectoire avec un vrai enroulement d'angle (`trajectory.py`), le contrat de forme/confiance du manifeste de modèle (`model_manifest.py`), la vérification honnête de l'état matériel dans `status` (`hardware.py`), la surface JSON/HTTP (`api.py`), et la frontière d'intégration HailoRT (`hailo_runtime.py`) sont réels et testés - 71 tests qui passent (`pytest tests/`). Rien de tout cela n'a besoin d'un modèle VLA ni d'un NPU Hailo-10 pour tourner ou être testé - `tokens encode`/`tokens decode`/`trajectory integrate`/`status` fonctionnent déjà aujourd'hui sur des données synthétiques, et `status` rapporte délibérément `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference` plutôt qu'un faux "ready". Le nouveau `Dockerfile` réutilise les mêmes options CLI déjà vérifiées en direct sur la vraie unité systemd du CM5, mais n'a pas été testé en build lui-même - cette machine de développement n'a pas de runtime Docker. L'inférence réelle d'un modèle VLA, le contrôle sémantique et la généralisation zero-shot restent de la pure aspiration : aucun modèle n'a encore été choisi, et cet environnement n'a pas de module Hailo-10 physique pour en exécuter un. Voir `CHANGELOG.md` pour savoir exactement ce qui a été livré jusqu'à présent, et la propre liste de fonctionnalités de la section 1 ci-dessous pour le détail réel/futur par fonctionnalité.
+**Vérification d'honnêteté - ce qui fonctionne réellement aujourd'hui :** l'encodage/décodage des tokens d'action (`action_tokens.py`), l'intégration de trajectoire avec un vrai enroulement d'angle (`trajectory.py`), le contrat de forme/confiance du manifeste de modèle (`model_manifest.py`), la vérification honnête de l'état matériel dans `status` (`hardware.py`), la surface JSON/HTTP (`api.py`), et la frontière d'intégration HailoRT (`hailo_runtime.py`) sont réels et testés - 85 tests qui passent (`pytest tests/`). Rien de tout cela n'a besoin d'un modèle VLA ni d'un NPU Hailo-10 pour tourner ou être testé - `tokens encode`/`tokens decode`/`trajectory integrate`/`status` fonctionnent déjà aujourd'hui sur des données synthétiques, et `status` rapporte délibérément `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference` plutôt qu'un faux "ready". Le nouveau `Dockerfile` réutilise les mêmes options CLI déjà vérifiées en direct sur la vraie unité systemd du CM5, mais n'a pas été testé en build lui-même - cette machine de développement n'a pas de runtime Docker. L'inférence réelle d'un modèle VLA, le contrôle sémantique et la généralisation zero-shot restent de la pure aspiration : aucun modèle n'a encore été choisi, et cet environnement n'a pas de module Hailo-10 physique pour en exécuter un. Voir `CHANGELOG.md` pour savoir exactement ce qui a été livré jusqu'à présent, et la propre liste de fonctionnalités de la section 1 ci-dessous pour le détail réel/futur par fonctionnalité.
 
 ---
 
@@ -26,6 +26,7 @@ Ce moteur permet au robot de comprendre des commandes telles que « ramasser le 
 
 ### Caractéristiques principales :
 * ✅ **Réel v0 - jetons d'action & trajectoire :** `action_tokens.py` implémente le schéma de discrétisation à 256 bins de style OpenVLA/RT-2 (action continue <-> jeton discret, selon l'espace d'action à 7 degrés de liberté - delta de pose + gripper), et `trajectory.py` intègre une séquence d'actions décodées en une trajectoire de poses absolues. Exposé via `tokens encode`/`tokens decode`/`trajectory integrate` ci-dessous - aucun modèle VLA ni NPU Hailo-10 nécessaire pour l'exécuter ou le tester.
+* 🧯 **Ce qui n'est pas un nombre ne devient jamais un mouvement :** `encode_action` rejette NaN et l'infini (borner un NaN choisissait la limite haute, si bien qu'une sortie NaN du modèle était encodée comme le mouvement maximal sur chaque axe), un `vocab_size` hors de 2-65536 est refusé et l'API HTTP rejette avec `400` les littéraux JSON `NaN`/`Infinity` et les chaînes `"nan"`/`"inf"`. *(implémenté)*
 * 📜 **Manifeste de modèle + validation de sortie :** Un contrat réel et versionné (`model_manifest.py`) que toute future intégration de modèle doit respecter - correspondant à la forme action/vocabulaire et à une famille de puce Hailo connue - ainsi que la validation de forme/confiance pour la sortie d'inférence brute d'un modèle. *(implémenté)*
 * 🔌 **Limite d'intégration HailoRT, préparée en amont du module :** `hailo_runtime.py` est écrit contre l'API réelle et confirmée `hailo_platform` (`VDevice`, `HEF`, `ConfigureParams`, `InputVStreamParams`/`OutputVStreamParams`) - importée paresseusement afin que ce dépôt s'installe/se teste proprement sans le paquet `hailort` ni module Hailo-10 présent, et `hailo_output_to_tokens()` (la pièce qui adapte un résultat d'inférence réel vers le propre contrat de tokens de ce moteur) est aujourd'hui entièrement couverte par des tests unitaires. *(implémenté, limite d'intégration seulement - voir ci-dessous)*
 * 🩺 **Sous-commande `status` honnête :** Rapporte la disponibilité réelle de l'accélérateur/des poids du modèle - `no_accelerator`, `no_model_weights`, ou `hardware_ready_no_inference` - jamais un faux état « prêt ». *(implémenté)*
@@ -171,7 +172,7 @@ kilométrique, voir `bump_version.py`) avant chaque build réel. Sortie
 attendue de `run.sh` (invocation nue) :
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.4
+HYDRA-UMC-VLA-ENGINE v0.1.5
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 
@@ -228,7 +229,7 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## ✅ État Actuel et Prochaines Étapes
 
-**Réel aujourd'hui :** l'encodage/décodage des jetons d'action et la génération de trajectoire (`action_tokens.py`, `trajectory.py`) - les étapes « Jetons d'action » et « Générateur de trajectoire » du diagramme de flux ci-dessus - plus une véritable limite d'intégration HailoRT (`hailo_runtime.py`) prête pour un vrai modèle `.hef` et un module Hailo-10 dès qu'ils existeront. 71 tests et un CLI réel.
+**Réel aujourd'hui :** l'encodage/décodage des jetons d'action et la génération de trajectoire (`action_tokens.py`, `trajectory.py`) - les étapes « Jetons d'action » et « Générateur de trajectoire » du diagramme de flux ci-dessus - plus une véritable limite d'intégration HailoRT (`hailo_runtime.py`) prête pour un vrai modèle `.hef` et un module Hailo-10 dès qu'ils existeront. 85 tests et un CLI réel.
 
 **Encore à venir, et bloqué par du vrai matériel/un vrai modèle :** exécuter réellement l'inférence nécessite un vrai modèle VLA `.hef` compilé (OpenVLA/RT-2 quantifié pour Hailo-10 - aucun modèle spécifique choisi pour l'instant) et un module Hailo-10 physique branché, deux véritables blocages inévitables que `hailo_runtime.py` ne peut pas lever seul - mais charger et décoder un modèle, une fois qu'il existera, n'est plus du code non écrit.
 

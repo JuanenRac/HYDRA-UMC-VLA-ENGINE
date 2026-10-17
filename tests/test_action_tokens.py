@@ -71,3 +71,33 @@ def test_decode_bin_center_not_bin_edge():
     spec = (ActionSpec("x", 0.0, 1.0),)
     value = decode_action((0,), specs=spec, vocab_size=2)
     assert value[0] == pytest.approx(0.25)
+
+
+# ---- a model output that is not a number must never become a movement ----
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_encode_rejects_a_value_that_is_not_finite(bad):
+    for axis in range(7):
+        values = [0.0] * 7
+        values[axis] = bad
+        with pytest.raises(TokenizationError, match="finite"):
+            encode_action(tuple(values))
+
+
+def test_encode_nan_is_not_the_maximum_movement():
+    # the old behaviour: NaN clamped to the upper bound, token 255 on every axis, decoded as +0.0498 m
+    with pytest.raises(TokenizationError):
+        encode_action((float("nan"),) * 7)
+
+
+@pytest.mark.parametrize("bad", [0, 1, -3, 65537, True, 2.5, "256"])
+def test_encode_and_decode_reject_a_bad_vocab_size(bad):
+    with pytest.raises(TokenizationError, match="vocab_size"):
+        encode_action((0.0,) * 7, vocab_size=bad)
+    with pytest.raises(TokenizationError, match="vocab_size"):
+        decode_action((0,) * 7, vocab_size=bad)
+
+
+def test_the_smallest_and_largest_vocab_still_work():
+    assert len(encode_action((0.0,) * 7, vocab_size=2)) == 7
+    assert len(encode_action((0.0,) * 7, vocab_size=65536)) == 7

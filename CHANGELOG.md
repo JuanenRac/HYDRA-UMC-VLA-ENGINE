@@ -5,6 +5,13 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
+## [0.1.5] - A NaN model output is refused instead of becoming the maximum movement
+
+- `encode_action` rejects NaN and infinity: clamping a NaN picked the upper bound, so a model that produced NaN was encoded as token 255 on all 7 axes, which decodes to +0.0498 m on dx/dy/dz, +0.0996 rad on the rotations and a gripper at 0.998 - the maximum movement.
+- A `vocab_size` outside 2-65536 (0, negative, a boolean, a float) is refused by `encode_action` and `decode_action`; it used to give wrong bins or an uncaught ZeroDivisionError that killed the handler thread.
+- The HTTP API rejects the JSON literals `NaN`/`Infinity`/`-Infinity` (which `json.loads` accepts although they are not JSON) and the strings `"nan"`/`"inf"` with `400`.
+- 14 new tests (85 in total) cover every axis, the API literals and strings, and a handler that keeps serving after a bad `vocab_size`; the 7 READMEs say so, plus a Portuguese README.
+
 ## [0.1.4] - Trajectory proposal marker
 
 - POST /trajectory/integrate now returns a proposal block next to the poses: authorized is always false, the fingerprint (SHA-256 of exactly those poses) lets an approval elsewhere name the trajectory it covers, and it states that an authenticated control must approve before any execution.

@@ -56,6 +56,10 @@ MAX_BODY_BYTES = 1024 * 1024
 DRAIN_CAP_BYTES = MAX_BODY_BYTES * 16
 
 
+def _reject_constant(name: str) -> float:
+    raise ValueError(f"{name} is not a valid JSON number")
+
+
 def _read_json_body(handler: BaseHTTPRequestHandler) -> dict:
     try:
         length = int(handler.headers.get("Content-Length", "0") or "0")
@@ -66,7 +70,8 @@ def _read_json_body(handler: BaseHTTPRequestHandler) -> dict:
             handler.rfile.read(length)
         raise ValueError(f"request body must contain 0-{MAX_BODY_BYTES} bytes")
     raw = handler.rfile.read(length) if length > 0 else b"{}"
-    return json.loads(raw)
+    # json.loads accepts the literals NaN, Infinity and -Infinity, which are not JSON: they would reach the model's arithmetic as real numbers.
+    return json.loads(raw, parse_constant=_reject_constant)
 
 
 def _query_params(handler: BaseHTTPRequestHandler) -> dict[str, str]:
