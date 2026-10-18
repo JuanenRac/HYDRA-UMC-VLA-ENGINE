@@ -20,6 +20,17 @@
 
 ---
 
+## 📋 ひと目で
+
+| | |
+|---|---|
+| バージョン | `0.1.6` |
+| 成熟度 | 確立 |
+| テスト | 98 (`pytest tests/`) |
+| 技術 | Python / Vision-Language-Action model |
+| 対象 | HYDRA-UMC セルの Raspberry Pi CM5 |
+| 実機での確認 | まだです：このバージョンについて実機での動作記録はありません |
+
 ## 1. 🛠️ 技術概要
 
 **HYDRA-UMC-VLA-ENGINE** は、視覚的コンテキストと自然言語を直接的な

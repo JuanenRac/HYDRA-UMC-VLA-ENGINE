@@ -20,6 +20,17 @@
 
 ---
 
+## 📋 Auf einen Blick
+
+| | |
+|---|---|
+| Version | `0.1.6` |
+| Reifegrad | Etabliert |
+| Tests | 98 (`pytest tests/`) |
+| Technik | Python / Vision-Language-Action model |
+| Ziel | Der Raspberry Pi CM5 einer HYDRA-UMC-Zelle |
+| Auf echter Hardware | Noch nicht: für diese Version ist kein Lauf auf echter Hardware vermerkt |
+
 ## 1. 🛠️ TECHNISCHER ÜBERBLICK
 
 **HYDRA-UMC-VLA-ENGINE** ist die multimodale Brücke, die visuellen Kontext und natürliche Sprache in direkte Roboteraktionen übersetzt. Es implementiert quantisierte Versionen modernster VLA-Modelle (wie OpenVLA oder spezialisierte RT-2-Varianten), um lokal auf der Hailo-10 NPU zu laufen.
