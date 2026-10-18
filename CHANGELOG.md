@@ -5,6 +5,11 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
+## [0.1.7]
+
+- Maturity is functional: nothing here has been verified on real hardware yet.
+- The READMEs say, in the eight languages, what is planned and what has only been tested against fakes, emulators or fixtures, and carry a short safety and security status note.
+
 ## [0.1.6] - Model output limited to the action space, zero token without drift, hardened service
 
 - **Model output is checked against the action space:** `integrate_trajectory` only used the length of the action space, so a delta of 10 m or a gripper value of 7 was integrated into a trajectory with a fingerprint. Every delta must now be inside the action-space bounds (0.05 m, 0.1 rad per step, gripper within 0 to 1) and a sequence may have at most 1000 steps; otherwise the API and the CLI answer with an error.
