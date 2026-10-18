@@ -16,22 +16,29 @@ memory.
 
 ```
 $ hydra-umc-vla-engine -h
-usage: hydra-umc-vla-engine [-h] {tokens,trajectory} ...
+usage: hydra-umc-vla-engine [-h] {tokens,trajectory,status,serve} ...
 
 positional arguments:
-  {tokens,trajectory}
-    tokens             Encode/decode VLA action tokens.
-    trajectory         Generate a trajectory from an action sequence.
+  {tokens,trajectory,status,serve}
+    tokens              Encode/decode VLA action tokens.
+    trajectory          Generate a trajectory from an action sequence.
+    status              Real, honest report of accelerator/model-weight
+                        availability - never a fake ready state.
+    serve               Run tokens encode/decode, trajectory integrate, and
+                        status as a JSON/HTTP API (POST /tokens/encode, POST
+                        /tokens/decode, POST /trajectory/integrate, GET
+                        /status) - the exact same functions the CLI
+                        subcommands above already run.
 
 options:
-  -h, --help           show this help message and exit
+  -h, --help            show this help message and exit
 ```
 
 Bare invocation (no subcommand) prints identity/version/role and exits `0`:
 
 ```
 $ hydra-umc-vla-engine
-HYDRA-UMC-VLA-ENGINE v0.0.4
+HYDRA-UMC-VLA-ENGINE v0.1.6
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

@@ -16,6 +16,8 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+import pytest
+
 from hydra_umc_vla_engine.api import VlaEngineServer
 
 
@@ -142,11 +144,9 @@ def test_not_found(tmp_path: Path) -> None:
 def test_malformed_json_body_rejected(tmp_path: Path) -> None:
     with running_server(tmp_path) as base:
         req = urllib.request.Request(f"{base}/tokens/encode", data=b"{not json", method="POST")
-        try:
+        with pytest.raises(urllib.error.HTTPError) as caught:
             urllib.request.urlopen(req, timeout=5)
-            assert False, "expected HTTPError"
-        except urllib.error.HTTPError as e:
-            assert e.code == 400
+        assert caught.value.code == 400
 
 
 def test_oversized_content_length_rejected(tmp_path: Path) -> None:
@@ -161,19 +161,17 @@ def test_oversized_content_length_rejected(tmp_path: Path) -> None:
     with running_server(tmp_path) as base:
         oversized = b"x" * (MAX_BODY_BYTES + 1)
         req = urllib.request.Request(f"{base}/tokens/encode", data=oversized, method="POST")
-        try:
+        with pytest.raises(urllib.error.HTTPError) as caught:
             urllib.request.urlopen(req, timeout=5)
-            assert False, "expected HTTPError"
-        except urllib.error.HTTPError as e:
-            assert e.code == 400
-            assert "0-" in e.read().decode()
+        assert caught.value.code == 400
+        assert "0-" in caught.value.read().decode()
 
 
 def test_an_integrated_trajectory_is_a_proposal_bound_to_its_poses(tmp_path: Path) -> None:
     with running_server(tmp_path) as base:
-        first = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[1, 0, 0, 0, 0, 0, 0]]})[1]
-        again = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[1, 0, 0, 0, 0, 0, 0]]})[1]
-        other = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[2, 0, 0, 0, 0, 0, 0]]})[1]
+        first = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[0.05, 0, 0, 0, 0, 0, 0]]})[1]
+        again = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[0.05, 0, 0, 0, 0, 0, 0]]})[1]
+        other = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[0.04, 0, 0, 0, 0, 0, 0]]})[1]
     assert first["proposal"]["authorized"] is False
     assert len(first["proposal"]["fingerprint"]) == 64
     assert first["proposal"]["fingerprint"] == again["proposal"]["fingerprint"]
@@ -209,3 +207,43 @@ def test_a_bad_vocab_size_is_a_400_not_a_crashed_handler(tmp_path: Path) -> None
         # and the server is still serving
         status, _ = _post(f"{base}/tokens/encode", {"action": [0.0] * 7})
         assert status == 200
+
+
+def test_deltas_outside_the_action_space_are_a_400(tmp_path: Path) -> None:
+    with running_server(tmp_path) as base:
+        status, body = _post(f"{base}/trajectory/integrate", {"start": [0, 0, 0, 0, 0, 0], "actions": [[10, 0, -5, 3, 0, 0, 7]] * 3})
+    assert status == 400
+    assert "action space" in body["error"]
+
+
+def test_strict_types_on_encode_decode_and_integrate(tmp_path: Path) -> None:
+    with running_server(tmp_path) as base:
+        assert _post(f"{base}/tokens/encode", {"action": [True, 0, 0, 0, 0, 0, 0]})[0] == 400
+        assert _post(f"{base}/tokens/encode", {"action": ["0.01", 0, 0, 0, 0, 0, 0]})[0] == 400
+        assert _post(f"{base}/tokens/decode", {"tokens": [128.7] * 7})[0] == 400
+        assert _post(f"{base}/tokens/decode", {"tokens": ["7"] * 7})[0] == 400
+        assert _post(f"{base}/tokens/decode", {"tokens": [128] * 7, "vocab_size": 2.9})[0] == 400
+        assert _post(f"{base}/trajectory/integrate", {"start": ["0"] * 6, "actions": []})[0] == 400
+
+
+def test_the_workspace_override_stays_inside_the_servers_workspace(tmp_path: Path) -> None:
+    workspace = tmp_path / "ws"
+    workspace.mkdir()
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    with running_server(workspace) as base:
+        status, _ = _get(f"{base}/status?workspace={outside}")
+        assert status == 400
+        status, _ = _get(f"{base}/status?workspace={workspace}")
+        assert status == 200
+
+
+def test_health_answers_ok(tmp_path: Path) -> None:
+    with running_server(tmp_path) as base:
+        assert _get(f"{base}/health") == (200, {"ok": True})
+
+
+def test_the_handler_has_a_socket_timeout() -> None:
+    from hydra_umc_vla_engine.api import Handler
+
+    assert Handler.timeout is not None and Handler.timeout > 0

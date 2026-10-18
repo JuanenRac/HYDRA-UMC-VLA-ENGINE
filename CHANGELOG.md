@@ -5,6 +5,16 @@ version number follows this ecosystem's "odometer" scheme: PATCH +1 on
 every real build, rolling into MINOR past 9 (`0.0.9` -> `0.1.0`); MAJOR is
 bumped manually only. See `bump_version.py`.
 
+## [0.1.6] - Model output limited to the action space, zero token without drift, hardened service
+
+- **Model output is checked against the action space:** `integrate_trajectory` only used the length of the action space, so a delta of 10 m or a gripper value of 7 was integrated into a trajectory with a fingerprint. Every delta must now be inside the action-space bounds (0.05 m, 0.1 rad per step, gripper within 0 to 1) and a sequence may have at most 1000 steps; otherwise the API and the CLI answer with an error.
+- **"No movement" no longer drifts:** with an even vocabulary the zero token decoded to a small positive value, accumulating about 0.2 m per axis over 1000 still predictions. The symmetric axes now decode it to exactly 0.0 (`snap_zero`, on by default).
+- **HTTP hardening:** the handler drops connections that stay silent (15 s), oversized bodies are discarded in 64 KiB pieces instead of one buffer of up to 16 MiB, `?workspace=` must stay inside the workspace the server was started with, and the numeric fields of `/tokens/encode`, `/tokens/decode` and `/trajectory/integrate` reject booleans, strings and non-integer tokens or vocabulary sizes. `GET /health` is new.
+- **Hardware probes work under systemd:** the unit used `PrivateDevices=true`, which hides `/dev/hailo0`; it now keeps the real `/dev` with `DevicePolicy=closed` and the accelerator allowed.
+- **Container workspace and model check:** the image reads `HYDRA_UMC_WORKSPACE`, and "model weights present" now needs a non-empty `.hef` file (symlinks are not followed) instead of any file such as a `.gitkeep`.
+- **Corrupt Hailo output:** NaN, infinite or out-of-range tokens and confidence values raise `TokenizationError` instead of a bare `ValueError` or a giant integer.
+- **Tests and docs:** `assert False` in the API tests is replaced by `pytest.raises`, the CLI reference shows the real `-h` output (including `status` and `serve`), the README (all languages) lists the known limits (98 tests).
+
 ## [0.1.5] - A NaN model output is refused instead of becoming the maximum movement
 
 - `encode_action` rejects NaN and infinity: clamping a NaN picked the upper bound, so a model that produced NaN was encoded as token 255 on all 7 axes, which decodes to +0.0498 m on dx/dy/dz, +0.0996 rad on the rotations and a gripper at 0.998 - the maximum movement.

@@ -108,3 +108,25 @@ def test_hailo_output_to_tokens_wrong_arity() -> None:
 
     with pytest.raises(TokenizationError, match="expected 8 values"):
         hailo_output_to_tokens(raw_output, model)
+
+
+def test_a_corrupt_hailo_output_is_a_tokenization_error():
+    import pytest
+
+    from hydra_umc_vla_engine.action_tokens import TokenizationError
+    from hydra_umc_vla_engine.hailo_runtime import HailoVlaModel, hailo_output_to_tokens
+
+    model = HailoVlaModel.__new__(HailoVlaModel)
+    object.__setattr__(model, "output_name", "out") if hasattr(model, "__dataclass_fields__") else setattr(model, "output_name", "out")
+    for bad in (
+        [float("nan")] + [1.0] * 6 + [0.9],
+        [float("inf")] + [1.0] * 6 + [0.9],
+        [1e300] + [1.0] * 6 + [0.9],
+        [-5.0] + [1.0] * 6 + [0.9],
+        [1.0] * 7 + [float("nan")],
+        [1.0] * 7 + [3.0],
+    ):
+        with pytest.raises(TokenizationError):
+            hailo_output_to_tokens({"out": bad}, model)
+    good = hailo_output_to_tokens({"out": [128.0] * 7 + [0.9]}, model)
+    assert good["tokens"] == [128] * 7 and good["confidence"] == 0.9

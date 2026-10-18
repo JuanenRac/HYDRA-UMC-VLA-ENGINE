@@ -31,6 +31,9 @@ COPY src ./src
 RUN pip install --no-cache-dir .
 
 RUN useradd --system --create-home --home-dir /home/hydra hydra
+# Where the sibling checkouts (HYDRA-UMC-COGNITIVE-NODE/models) are mounted:
+# an installed package cannot work this out from its own path.
+ENV HYDRA_UMC_WORKSPACE=/workspace
 USER hydra
 
 EXPOSE 8098

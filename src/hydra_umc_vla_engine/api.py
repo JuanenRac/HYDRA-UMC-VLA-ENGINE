@@ -51,13 +51,23 @@ def _write_error(handler: BaseHTTPRequestHandler, status: int, message: str) -> 
 MAX_BODY_BYTES = 1024 * 1024
 # How much of an oversized body this drains before responding - lets the
 # client finish sending before the response goes out (same reasoning as
-# the sibling api.py modules that already do this), without ever holding
-# more than one bounded read in memory.
+# the sibling api.py modules that already do this). The drained bytes are
+# read in 64 KiB pieces and thrown away, so nothing large is held in memory.
 DRAIN_CAP_BYTES = MAX_BODY_BYTES * 16
 
 
 def _reject_constant(name: str) -> float:
     raise ValueError(f"{name} is not a valid JSON number")
+
+
+def _discard(rfile, length: int, chunk: int = 64 * 1024) -> None:
+    """Reads and throws away `length` bytes in small pieces (never a 16 MiB buffer)."""
+    remaining = length
+    while remaining > 0:
+        block = rfile.read(min(chunk, remaining))
+        if not block:
+            return
+        remaining -= len(block)
 
 
 def _read_json_body(handler: BaseHTTPRequestHandler) -> dict:
@@ -67,7 +77,7 @@ def _read_json_body(handler: BaseHTTPRequestHandler) -> dict:
         raise ValueError("Content-Length must be an integer") from error
     if length < 0 or length > MAX_BODY_BYTES:
         if 0 <= length <= DRAIN_CAP_BYTES:
-            handler.rfile.read(length)
+            _discard(handler.rfile, length)
         raise ValueError(f"request body must contain 0-{MAX_BODY_BYTES} bytes")
     raw = handler.rfile.read(length) if length > 0 else b"{}"
     # json.loads accepts the literals NaN, Infinity and -Infinity, which are not JSON: they would reach the model's arithmetic as real numbers.
@@ -96,8 +106,24 @@ def proposal_record(poses: list[dict]) -> dict:
     }
 
 
+def _strict_number(value: object, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{label} must be a number, got {value!r}")
+    return float(value)
+
+
+def _strict_int(value: object, label: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{label} must be an integer, got {value!r}")
+    return value
+
+
 class Handler(BaseHTTPRequestHandler):
     server: "VlaEngineServer"
+
+    # Seconds a client may stay silent on its connection before it is dropped,
+    # so one that connects and sends nothing cannot hold a handler thread.
+    timeout = 15.0
 
     def log_message(self, format: str, *args: object) -> None:  # noqa: A002
         pass  # quiet by default, same reasoning as this family's other api.py files
@@ -106,13 +132,26 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/status":
             params = _query_params(self)
-            workspace = Path(params["workspace"]) if "workspace" in params else self.server.workspace
+            workspace = self.server.workspace
+            if "workspace" in params:
+                # only a folder inside the workspace the server was started with
+                requested = Path(params["workspace"])
+                try:
+                    inside = requested.resolve().is_relative_to(self.server.workspace.resolve())
+                except OSError:
+                    inside = False
+                if not inside:
+                    _write_error(self, 400, "workspace must be inside the workspace this server was started with")
+                    return
+                workspace = requested
             status = check_engine_status(workspace)
             _write_json(self, 200, {
                 "acceleratorPresent": status.accelerator_present,
                 "modelWeightsPresent": status.model_weights_present,
                 "mode": status.mode.value,
             })
+        elif path == "/health":
+            _write_json(self, 200, {"ok": True})
         elif path == "/stats":
             _write_json(self, 200, {"workspace": str(self.server.workspace)})
         else:
@@ -139,8 +178,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_encode(self, body: dict) -> None:
         try:
-            action = tuple(float(v) for v in body["action"])
-            vocab_size = int(body.get("vocab_size", DEFAULT_VOCAB_SIZE))
+            action = tuple(_strict_number(v, "action") for v in body["action"])
+            vocab_size = _strict_int(body.get("vocab_size", DEFAULT_VOCAB_SIZE), "vocab_size")
             tokens = encode_action(action, vocab_size=vocab_size)
         except KeyError as e:
             _write_error(self, 400, f"missing required field: {e}")
@@ -152,8 +191,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_decode(self, body: dict) -> None:
         try:
-            tokens = tuple(int(v) for v in body["tokens"])
-            vocab_size = int(body.get("vocab_size", DEFAULT_VOCAB_SIZE))
+            tokens = tuple(_strict_int(v, "tokens") for v in body["tokens"])
+            vocab_size = _strict_int(body.get("vocab_size", DEFAULT_VOCAB_SIZE), "vocab_size")
             values = decode_action(tokens, vocab_size=vocab_size)
         except KeyError as e:
             _write_error(self, 400, f"missing required field: {e}")
@@ -165,8 +204,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_integrate(self, body: dict) -> None:
         try:
-            start_values = tuple(float(v) for v in body["start"])
-            start = Pose(*start_values, gripper=float(body.get("start_gripper", 0.0)))
+            start_values = tuple(_strict_number(v, "start") for v in body["start"])
+            start = Pose(*start_values, gripper=_strict_number(body.get("start_gripper", 0.0), "start_gripper"))
             actions_raw = body["actions"]
             if not isinstance(actions_raw, list):
                 raise TrajectoryError("actions: expected a JSON array")

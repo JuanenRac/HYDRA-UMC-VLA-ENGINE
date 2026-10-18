@@ -46,7 +46,7 @@ def test_model_weights_available_false_when_models_dir_empty(tmp_path: Path) -> 
 def test_model_weights_available_true_with_real_content(tmp_path: Path) -> None:
     models_dir = tmp_path / "HYDRA-UMC-COGNITIVE-NODE" / "models"
     models_dir.mkdir(parents=True)
-    (models_dir / "vla-weights.bin").write_bytes(b"fixture")
+    (models_dir / "vla-weights.hef").write_bytes(b"fixture")
 
     assert model_weights_available(tmp_path) is True
 
@@ -59,3 +59,19 @@ def test_check_engine_status_on_this_real_dev_machine(tmp_path: Path) -> None:
 
     assert status.accelerator_present is False
     assert status.mode == EngineMode.NO_ACCELERATOR
+
+
+def test_a_gitkeep_or_a_readme_is_not_a_model(tmp_path: Path) -> None:
+    models_dir = tmp_path / "HYDRA-UMC-COGNITIVE-NODE" / "models"
+    models_dir.mkdir(parents=True)
+    (models_dir / ".gitkeep").write_bytes(b"")
+    (models_dir / "README.md").write_text("weights go here")
+    (models_dir / "empty.hef").write_bytes(b"")
+    assert model_weights_available(tmp_path) is False
+
+
+def test_a_compiled_model_in_a_subfolder_counts(tmp_path: Path) -> None:
+    nested = tmp_path / "HYDRA-UMC-COGNITIVE-NODE" / "models" / "vla"
+    nested.mkdir(parents=True)
+    (nested / "policy.hef").write_bytes(b"compiled")
+    assert model_weights_available(tmp_path) is True

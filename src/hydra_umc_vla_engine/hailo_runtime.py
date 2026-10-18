@@ -44,11 +44,12 @@ tests use), so it is fully unit-testable without hailort or a Hailo-10 NPU.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .action_tokens import TokenizationError
+from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError
 from .model_manifest import EXPECTED_MODEL_MANIFEST
 
 HAILORT_INSTALL_HINT = (
@@ -175,5 +176,22 @@ def hailo_output_to_tokens(raw_output: dict[str, Any], model: HailoVlaModel) -> 
             f"({expected_dims} action tokens + 1 confidence), got {len(values)}"
         )
     *token_values, confidence = values
-    tokens = [int(round(float(value))) for value in token_values]
-    return {"tokens": tokens, "confidence": float(confidence)}
+    tokens: list[int] = []
+    for index, value in enumerate(token_values):
+        try:
+            number = float(value)
+        except (TypeError, ValueError) as error:
+            raise TokenizationError(f"hailo output token {index} is not a number: {value!r}") from error
+        if not math.isfinite(number):
+            raise TokenizationError(f"hailo output token {index} is not finite: {value!r}")
+        token = int(round(number))
+        if not 0 <= token < DEFAULT_VOCAB_SIZE:
+            raise TokenizationError(f"hailo output token {index} is {token}, outside [0, {DEFAULT_VOCAB_SIZE})")
+        tokens.append(token)
+    try:
+        confidence_value = float(confidence)
+    except (TypeError, ValueError) as error:
+        raise TokenizationError(f"hailo output confidence is not a number: {confidence!r}") from error
+    if not math.isfinite(confidence_value) or not 0.0 <= confidence_value <= 1.0:
+        raise TokenizationError(f"hailo output confidence {confidence!r} is not within [0, 1]")
+    return {"tokens": tokens, "confidence": confidence_value}

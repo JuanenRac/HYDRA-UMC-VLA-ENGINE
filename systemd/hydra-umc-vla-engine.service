@@ -4,7 +4,7 @@
 # GPL-3.0-or-later - see LICENSE
 # =============================================================================
 # --workspace points at a real root:root 0755 tree under /opt (see
-# install_vla_engine.sh), the same layout check_engine_status() already
+# HYDRA-UMC-OS/provisioning/install_vla_engine.sh), the same layout check_engine_status() already
 # expects (workspace/HYDRA-UMC-COGNITIVE-NODE/models/). Deliberately NOT
 # a symlink to the real sibling-repo checkout root - real bug found live
 # installing HYDRA-UMC-VISION-NODE first: that root lives under the
@@ -28,7 +28,10 @@ Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
-PrivateDevices=true
+# No PrivateDevices: it hides /dev/hailo0, which the engine probes for. The
+# device policy limits access to the accelerator instead.
+DevicePolicy=closed
+DeviceAllow=/dev/hailo0 rw
 ProtectHome=true
 ProtectSystem=strict
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

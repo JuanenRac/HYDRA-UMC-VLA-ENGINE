@@ -2,7 +2,11 @@ import math
 
 import pytest
 
+from hydra_umc_vla_engine.action_tokens import ActionSpec
 from hydra_umc_vla_engine.trajectory import Pose, TrajectoryError, integrate_trajectory
+
+# bounds wide enough that these tests exercise overflow and wrap-around, not the action-space check
+WIDE = tuple(ActionSpec(name, -1e308, 1e308) for name in ("dx", "dy", "dz", "droll", "dpitch", "dyaw", "gripper"))
 
 
 def test_integrate_accumulates_deltas():
@@ -65,7 +69,7 @@ def test_accumulated_linear_overflow_is_rejected_not_returned_as_infinite():
     # which Python raises OverflowError for instead).
     start = Pose(1e308, 0, 0, 0, 0, 0, gripper=0.0)
     with pytest.raises(TrajectoryError, match="pose after action 0"):
-        integrate_trajectory(start, [(1e308, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)])
+        integrate_trajectory(start, [(1e308, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)], specs=WIDE)
 
 
 def test_accumulated_angular_overflow_is_rejected_with_a_clear_message():
@@ -74,7 +78,7 @@ def test_accumulated_angular_overflow_is_rejected_with_a_clear_message():
     # this same clear message every other field gets.
     start = Pose(0, 0, 0, 1e308, 0, 0, gripper=0.0)
     with pytest.raises(TrajectoryError, match="pose after action 0.roll"):
-        integrate_trajectory(start, [(0.0, 0.0, 0.0, 1e308, 0.0, 0.0, 0.0)])
+        integrate_trajectory(start, [(0.0, 0.0, 0.0, 1e308, 0.0, 0.0, 0.0)], specs=WIDE)
 
 
 def test_a_sequence_that_overflows_partway_through_rejects_the_whole_trajectory():
@@ -91,7 +95,7 @@ def test_a_sequence_that_overflows_partway_through_rejects_the_whole_trajectory(
         (1e308, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     ]
     with pytest.raises(TrajectoryError, match="pose after action 3"):
-        integrate_trajectory(start, actions)
+        integrate_trajectory(start, actions, specs=WIDE)
 
 
 def test_rotation_deltas_accumulate():
@@ -111,7 +115,7 @@ def test_rotation_wraps_instead_of_growing_without_bound():
     start = Pose(0, 0, 0, 0, 0, 0, gripper=0.0)
     step = math.pi / 2
     actions = [(0, 0, 0, 0.0, 0.0, step, 0.0)] * 5  # 5 * pi/2 = 2.5*pi total
-    poses = integrate_trajectory(start, actions)
+    poses = integrate_trajectory(start, actions, specs=WIDE)
     final_yaw = poses[-1].yaw
     assert -math.pi < final_yaw <= math.pi
     # 2.5*pi wraps to 0.5*pi (equivalent orientation, canonical range).
@@ -125,7 +129,31 @@ def test_rotation_wrap_preserves_the_real_orientation():
     start = Pose(0, 0, 0, 0, 0, 0, gripper=0.0)
     unwrapped_total = 3 * math.pi + 0.4
     actions = [(0, 0, 0, 0.0, 0.0, unwrapped_total, 0.0)]
-    poses = integrate_trajectory(start, actions)
+    poses = integrate_trajectory(start, actions, specs=WIDE)
     wrapped = poses[-1].yaw
     assert math.sin(wrapped) == pytest.approx(math.sin(unwrapped_total), abs=1e-9)
     assert math.cos(wrapped) == pytest.approx(math.cos(unwrapped_total), abs=1e-9)
+
+
+def test_a_delta_outside_the_action_space_is_rejected():
+    start = Pose(0, 0, 0, 0, 0, 0, gripper=0.0)
+    for action in (
+        (10.0, 0, 0, 0, 0, 0, 0.5),    # 10 m in one step
+        (0, 0, 0, 3.0, 0, 0, 0.5),     # 3 rad in one step
+        (0, 0, 0, 0, 0, 0, 7.0),       # gripper beyond [0, 1]
+        (0, 0, 0, 0, 0, 0, -0.5),
+    ):
+        with pytest.raises(TrajectoryError, match="outside the action space"):
+            integrate_trajectory(start, [action])
+
+
+def test_the_bounds_themselves_are_allowed():
+    start = Pose(0, 0, 0, 0, 0, 0, gripper=0.0)
+    poses = integrate_trajectory(start, [(0.05, -0.05, 0.05, 0.1, -0.1, 0.1, 1.0)])
+    assert poses[1].x == pytest.approx(0.05) and poses[1].gripper == 1.0
+
+
+def test_an_endless_sequence_is_rejected():
+    start = Pose(0, 0, 0, 0, 0, 0, gripper=0.0)
+    with pytest.raises(TrajectoryError, match="steps exceed"):
+        integrate_trajectory(start, [(0, 0, 0, 0, 0, 0, 0.0)] * 1001)

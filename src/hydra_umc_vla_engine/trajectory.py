@@ -34,6 +34,20 @@ class Pose:
     gripper: float
 
 
+# Most steps one trajectory may have, and how far past a spec bound a delta
+# may be (a decoded token is always inside it; this only absorbs rounding).
+MAX_STEPS = 1000
+_BOUND_TOLERANCE = 1e-9
+
+
+def _require_within(value: float, spec: ActionSpec, label: str) -> float:
+    """Model output is never trusted to respect the action space: a delta outside
+    the bounds the model was trained on is rejected, not integrated."""
+    if value < spec.min - _BOUND_TOLERANCE or value > spec.max + _BOUND_TOLERANCE:
+        raise TrajectoryError(f"{label}: {value} is outside the action space [{spec.min}, {spec.max}] for {spec.name}")
+    return value
+
+
 def _require_finite(value: object, label: str) -> float:
     """Return a safe numeric coordinate or reject malformed model output."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -76,6 +90,9 @@ def integrate_trajectory(
     for label, value in zip(("start.x", "start.y", "start.z", "start.roll", "start.pitch", "start.yaw", "start.gripper"), start_values):
         _require_finite(value, label)
 
+    if len(actions) > MAX_STEPS:
+        raise TrajectoryError(f"actions: {len(actions)} steps exceed the limit of {MAX_STEPS}")
+
     poses = [start]
     current = start
     for step, action in enumerate(actions):
@@ -85,6 +102,10 @@ def integrate_trajectory(
             _require_finite(value, f"action {step}[{index}]")
             for index, value in enumerate(action)
         )
+        for index, (value, spec) in enumerate(zip(
+            (dx, dy, dz, droll, dpitch, dyaw, gripper), specs, strict=True
+        )):
+            _require_within(value, spec, f"action {step}[{index}]")
         # _require_finite above only ever checked the RAW inputs
         # (start's own fields, each action's own 7 values) - two
         # perfectly finite values (e.g. start.x=1e308, dx=1e308) can

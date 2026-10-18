@@ -101,3 +101,23 @@ def test_encode_and_decode_reject_a_bad_vocab_size(bad):
 def test_the_smallest_and_largest_vocab_still_work():
     assert len(encode_action((0.0,) * 7, vocab_size=2)) == 7
     assert len(encode_action((0.0,) * 7, vocab_size=65536)) == 7
+
+
+def test_the_zero_bin_decodes_to_exactly_zero_on_symmetric_axes():
+    from hydra_umc_vla_engine.action_tokens import decode_action, encode_action
+
+    tokens = encode_action((0.0,) * 7)
+    values = decode_action(tokens)
+    assert values[:6] == (0.0,) * 6
+    assert 0.0 < values[6] < 1.0  # the gripper range is not symmetric: no snapping there
+    # without snapping the bias is still there, for anyone who wants raw bin centres
+    assert decode_action(tokens, snap_zero=False)[0] > 0.0
+
+
+def test_a_long_run_of_still_predictions_does_not_drift():
+    from hydra_umc_vla_engine.action_tokens import decode_action, encode_action
+    from hydra_umc_vla_engine.trajectory import Pose, integrate_trajectory
+
+    action = decode_action(encode_action((0.0,) * 7))
+    poses = integrate_trajectory(Pose(0, 0, 0, 0, 0, 0, 0.0), [action] * 1000)
+    assert poses[-1].x == 0.0 and poses[-1].roll == 0.0

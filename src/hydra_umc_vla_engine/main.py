@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -36,7 +37,9 @@ ROLE = (
 # this repo's own root, and one more level up is the workspace that
 # holds it as a sibling of HYDRA-UMC-COGNITIVE-NODE (see hardware.py).
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_DEFAULT_WORKSPACE = _REPO_ROOT.parent
+# An installed (non-editable) package lives in site-packages, where "two parents
+# up" means nothing, so HYDRA_UMC_WORKSPACE (set by the container image) wins.
+_DEFAULT_WORKSPACE = Path(os.environ.get("HYDRA_UMC_WORKSPACE") or _REPO_ROOT.parent)
 
 _MODE_MESSAGES = {
     EngineMode.NO_ACCELERATOR: "no Hailo-10 NPU device node on this machine - real inference cannot run here.",

@@ -15,6 +15,7 @@ sibling HYDRA-UMC-VISION-NODE's own hardware.py.
 from __future__ import annotations
 
 import enum
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,6 +27,11 @@ HAILO_DEVICE_PATH = Path("/dev/hailo0")
 # the sibling workspace this repo is checked out into.
 PARENT_REPO_NAME = "HYDRA-UMC-COGNITIVE-NODE"
 PARENT_MODELS_DIR_NAME = "models"
+
+# A compiled model this engine could load onto the accelerator. The parent
+# also accepts other weight formats; the engine runs a Hailo executable.
+MODEL_ARTIFACT_SUFFIXES = frozenset({".hef"})
+MAX_FILES_INSPECTED = 20_000
 
 
 def accelerator_available() -> bool:
@@ -43,7 +49,29 @@ def model_weights_available(workspace_root: Path) -> bool:
     `check_shared_models()` uses - a checked-out-but-never-provisioned
     directory has no real weights either way."""
     models_dir = workspace_root / PARENT_REPO_NAME / PARENT_MODELS_DIR_NAME
-    return models_dir.is_dir() and any(models_dir.iterdir())
+    return _contains_model_artifact(models_dir)
+
+
+def _contains_model_artifact(models_dir: Path) -> bool:
+    """True when `models_dir` holds a non-empty compiled model file. A
+    `.gitkeep`, a README or a tokenizer is not a model, symlinked files and
+    folders are not followed (the probe must stay inside the models tree),
+    and a filesystem error counts as "not present"."""
+    if not models_dir.is_dir() or models_dir.is_symlink():
+        return False
+    visited = 0
+    try:
+        for root, _dirs, files in os.walk(models_dir, followlinks=False):
+            for name in files:
+                visited += 1
+                if visited > MAX_FILES_INSPECTED:
+                    return False
+                path = Path(root) / name
+                if path.suffix.lower() in MODEL_ARTIFACT_SUFFIXES and not path.is_symlink() and path.stat().st_size > 0:
+                    return True
+    except OSError:
+        return False
+    return False
 
 
 class EngineMode(str, enum.Enum):

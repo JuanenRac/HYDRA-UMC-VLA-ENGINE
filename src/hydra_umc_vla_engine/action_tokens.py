@@ -101,8 +101,16 @@ def decode_action(
     tokens: tuple[int, ...],
     specs: tuple[ActionSpec, ...] = VLA_ACTION_SPACE,
     vocab_size: int = DEFAULT_VOCAB_SIZE,
+    snap_zero: bool = True,
 ) -> tuple[float, ...]:
-    """Discrete bin-id tokens -> continuous action values (bin centers)."""
+    """Discrete bin-id tokens -> continuous action values (bin centers).
+
+    With an even vocabulary no bin is centred on zero: the "no movement"
+    token 128 decodes to +half a bin, and a model that keeps predicting
+    "stay still" would drift a few millimetres per hundred steps. With
+    `snap_zero` (the default) a value within half a bin of zero, on an axis
+    whose range is symmetric around zero (the deltas, not the gripper),
+    decodes to exactly 0.0."""
     _check_vocab_size(vocab_size)
     if len(tokens) != len(specs):
         raise TokenizationError(f"expected {len(specs)} tokens, got {len(tokens)}")
@@ -111,5 +119,9 @@ def decode_action(
         if not (0 <= token < vocab_size):
             raise TokenizationError(f"{spec.name}: token {token} out of range [0, {vocab_size})")
         bin_center_fraction = (token + 0.5) / vocab_size
-        values.append(spec.min + bin_center_fraction * (spec.max - spec.min))
+        value = spec.min + bin_center_fraction * (spec.max - spec.min)
+        half_bin = (spec.max - spec.min) / vocab_size / 2
+        if snap_zero and spec.min == -spec.max and abs(value) <= half_bin * (1 + 1e-9):
+            value = 0.0
+        values.append(value)
     return tuple(values)
