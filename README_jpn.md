@@ -51,9 +51,7 @@
 * 🛠️ **タスクプランニング（計画中）：** 複雑な目標を原子レベルのロボットプリミティブへと分解。*（実際の VLA モデルが必要です。）*
 * 👨‍👩‍👧 **認知 AI ノードの子プロジェクト：**
   [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) の下で 4 つの兄弟サービスの 1 つとして動作します（Voice-UI、Semantic-Planner、Docs-QA と並んで）。独自のコピーを保持するのではなく、親プロジェクトの HydraOS イメージとモデルの重みを共有します。
-* 📦 **オドメーター式バージョン管理：** 実際のビルドのたびに
-  `pyproject.toml` 自身のバージョンが自動的に増加します
-  （`bump_version.py`）——手動でのバージョン編集は不要です。
+* 📦 **オドメーター式バージョン管理：** `pyproject.toml` のバージョンを上げるのは明示的な `bump` コマンド（`python tools/hydra_project_tool.py bump`、内部で `bump_version.py` を実行）だけです - ビルドがバージョンを変更することはありません。
 
 ---
 
@@ -105,7 +103,7 @@ HYDRA-UMC-VLA-ENGINE/
 │   └── hydra-umc-vla-engine.service  # ローカルCM5上のトークン化/軌道APIのsystemdユニット
 ├── build/                      # ローカルビルド出力（git 管理外）
 ├── pyproject.toml              # パッケージメタデータ（オドメーター式バージョン）
-├── bump_version.py             # ネイティブバージョンのオドメーター式インクリメント（build.sh/.bat が使用）
+├── bump_version.py             # オドメーター式バージョンインクリメント（明示的な `bump` コマンドのみが実行）
 ├── bump_manifest_version.py    # hydra-umc.project.json のバージョンをネイティブ版と同期(--sync)
 ├── build.sh / build.bat        # venv 作成、インストール（dev エクストラ付き）、インポート検証、テスト実行
 └── run.sh / run.bat            # エントリポイントを実行
@@ -136,8 +134,7 @@ build.bat
 run.bat
 ```
 
-`build.sh`/`build.bat` は、実際の各ビルドの前にバージョンを増加させます
-（オドメーター方式、`bump_version.py` を参照）。`run.sh`（素の呼び出し）
+`build.sh`/`build.bat` はバージョンを変更しません（上げるのは `python tools/hydra_project_tool.py bump` だけです）。`run.sh`（素の呼び出し）
 の予期される出力：
 
 ```text

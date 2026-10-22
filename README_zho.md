@@ -51,8 +51,7 @@
 * 🛠️ **任务规划（计划中）：** 将复杂目标分解为原子级的机器人操作单元。*（需要真实的 VLA 模型。）*
 * 👨‍👩‍👧 **认知 AI 节点子项目：** 作为
   [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) 下 4 个同级服务之一运行（与 Voice-UI、Semantic-Planner 和 Docs-QA 并列），共享父项目的 HydraOS 镜像和模型权重，而非各自保留独立副本。
-* 📦 **里程表式版本管理：** 每次真实构建都会自动递增 `pyproject.toml`
-  自身的版本号（`bump_version.py`）——无需手动编辑版本号。
+* 📦 **里程表式版本管理：** `pyproject.toml` 中的版本只由显式的 `bump` 命令提升（`python tools/hydra_project_tool.py bump`，它会运行 `bump_version.py`）- 构建绝不会更改它。
 
 ---
 
@@ -104,7 +103,7 @@ HYDRA-UMC-VLA-ENGINE/
 │   └── hydra-umc-vla-engine.service  # 本地 CM5 令牌化/轨迹 API 的 systemd 单元
 ├── build/                      # 本地构建输出（已被 git 忽略）
 ├── pyproject.toml              # 包元数据（里程表式递增版本号）
-├── bump_version.py             # 原生版本的里程表式递增（由 build.sh/.bat 使用）
+├── bump_version.py             # 里程表式版本递增（仅由显式 `bump` 命令运行）
 ├── bump_manifest_version.py    # 将 hydra-umc.project.json 的版本与原生版本同步(--sync)
 ├── build.sh / build.bat        # 创建 venv、安装（含 dev 附加项）、验证导入、运行测试
 └── run.sh / run.bat            # 运行入口点
@@ -133,8 +132,7 @@ build.bat
 run.bat
 ```
 
-`build.sh`/`build.bat` 会在每次真实构建之前递增版本号（里程表式，见
-`bump_version.py`）。`run.sh`（裸调用）的预期输出：
+`build.sh`/`build.bat` 不会更改版本号（只有 `python tools/hydra_project_tool.py bump` 才会提升）。`run.sh`（裸调用）的预期输出：
 
 ```text
 HYDRA-UMC-VLA-ENGINE v0.1.7

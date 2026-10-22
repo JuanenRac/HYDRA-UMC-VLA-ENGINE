@@ -53,8 +53,7 @@ The goal is to let the robot understand commands such as "pick the blue componen
   under [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE)
   (alongside Voice-UI, Semantic-Planner and Docs-QA), sharing its parent's
   HydraOS image and model weights instead of keeping its own copies.
-* 📦 **Odometer Versioning:** Every real build bumps `pyproject.toml`'s
-  own version automatically (`bump_version.py`) - no manual version edits.
+* 📦 **Odometer Versioning:** The version in `pyproject.toml` is raised only by the explicit bump command (`python tools/hydra_project_tool.py bump`, which runs `bump_version.py`) - building never changes it.
 
 ---
 
@@ -147,7 +146,7 @@ HYDRA-UMC-VLA-ENGINE/
 │   └── hydra-umc-vla-engine.service  # Local CM5 action-tokenization/trajectory API systemd unit
 ├── build/                      # Local build output (git-ignored)
 ├── pyproject.toml              # Package metadata (odometer-bumped version)
-├── bump_version.py             # Odometer-style native version bump (used by build.sh/.bat)
+├── bump_version.py             # Odometer-style version bump (run only by the explicit `bump` command)
 ├── bump_manifest_version.py    # Syncs hydra-umc.project.json's version to the native one (--sync)
 ├── build.sh / build.bat        # Create venv, install (with dev extras), verify import, run tests
 └── run.sh / run.bat            # Run the entry point
@@ -177,8 +176,7 @@ build.bat
 run.bat
 ```
 
-`build.sh`/`build.bat` bump the version (odometer-style, see
-`bump_version.py`) before every real build. Expected output of `run.sh`
+`build.sh`/`build.bat` never change the version (only `python tools/hydra_project_tool.py bump` raises it). Expected output of `run.sh`
 (bare invocation):
 
 ```text

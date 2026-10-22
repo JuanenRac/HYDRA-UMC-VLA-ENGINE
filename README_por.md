@@ -50,7 +50,7 @@ O objetivo é que o robô perceba ordens como «pega no componente azul e coloca
 * 🔄 **Generalização zero-shot (planeada):** Capaz de tratar objetos nunca vistos com base em descrições semânticas. *(precisa de um modelo VLA treinado real.)*
 * 🛠️ **Planeamento de tarefas (planeado):** Decompõe objetivos complexos em primitivas robóticas atómicas. *(precisa de um modelo VLA real.)*
 * 👨‍👩‍👧 **Filho do Cognitive AI Node:** Corre como um de quatro serviços irmãos sob o [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) (ao lado do Voice-UI, do Semantic-Planner e do Docs-QA), partilhando a imagem HydraOS e os pesos do modelo do seu pai em vez de manter cópias próprias.
-* 📦 **Versionamento em odómetro:** Cada compilação real sobe automaticamente a versão do `pyproject.toml` (`bump_version.py`) - sem edições manuais de versão.
+* 📦 **Versionamento em odómetro:** A versão do `pyproject.toml` só é subida pelo comando `bump` explícito (`python tools/hydra_project_tool.py bump`, que executa o `bump_version.py`) - compilar nunca a altera.
 
 ---
 
@@ -101,7 +101,7 @@ HYDRA-UMC-VLA-ENGINE/
 │   └── hydra-umc-vla-engine.service  # Unidade systemd local do CM5 para a API de tokenização de ações/trajetórias
 ├── build/                      # Saída de compilação local (ignorada pelo git)
 ├── pyproject.toml              # Metadados do pacote (versão subida em odómetro)
-├── bump_version.py             # Subida de versão nativa em odómetro (usada por build.sh/.bat)
+├── bump_version.py             # Subida de versão ao estilo conta-quilómetros (executada só pelo comando `bump` explícito)
 ├── bump_manifest_version.py    # Sincroniza a versão de hydra-umc.project.json com a nativa (--sync)
 ├── build.sh / build.bat        # Cria o venv, instala (com extras de desenvolvimento), verifica a importação, executa os testes
 └── run.sh / run.bat            # Executa o ponto de entrada
@@ -126,7 +126,7 @@ build.bat
 run.bat
 ```
 
-O `build.sh`/`build.bat` sobem a versão (em odómetro, veja `bump_version.py`) antes de cada compilação real. Saída esperada de `run.sh` (invocação simples):
+`build.sh`/`build.bat` nunca alteram a versão (só `python tools/hydra_project_tool.py bump` a sobe). Saída esperada de `run.sh` (invocação simples):
 
 ```text
 HYDRA-UMC-VLA-ENGINE v0.1.7
