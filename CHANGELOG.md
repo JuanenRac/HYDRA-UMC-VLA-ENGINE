@@ -1,4 +1,4 @@
-# Changelog: HYDRA-UMC-VLA-ENGINE 👁️
+# Changelog
 
 All notable changes to this project are documented here.
 
@@ -213,7 +213,6 @@ command).
 
 ## [0.0.4] - Real v0: action tokenization and trajectory generation
 
-### Added
 - `src/hydra_umc_vla_engine/action_tokens.py` - the "Action Tokens" step
   from README.md's VLA inference flow: `ActionSpec`/`VLA_ACTION_SPACE`
   (the 7-DOF space real VLA papers train on - 6-DOF end-effector pose
@@ -234,7 +233,6 @@ command).
 - 19 tests (`test_action_tokens.py`, `test_trajectory.py`, `test_cli.py`).
 - `pyproject.toml` - added a `dev` extra (`pytest`).
 
-### Changed
 - `build.sh`/`build.bat` - added the real test-suite step and the
   no-autoclose-on-double-click behavior common to the rest of the
   ecosystem's scripts.
@@ -245,20 +243,17 @@ Still out of scope: real VLA model inference (OpenVLA/RT-2 quantized
 for Hailo-10) - needs that real hardware and model weights.
 
 ## [0.0.3]
-### Added
 - Copyright/license header on every source file and build/run script.
 - `CHANGELOG.md` (this file).
 - Extended documentation across `README.md` and its 4 translations:
   advanced technical/architecture section, detailed build/run
   troubleshooting, and a full "Related Projects" section.
 
-### Changed
 - Inline comments explaining the *why* behind non-obvious decisions
   (versioning scheme, src-layout, why this child has no hardware/
   firmware/os/models of its own).
 
 ## [0.0.0]
-### Added
 - Initial Python scaffolding: `pyproject.toml` (setuptools, src-layout),
   `src/hydra_umc_vla_engine/__init__.py` + `main.py` (real entry point -
   prints identity/version/role, exits 0).
