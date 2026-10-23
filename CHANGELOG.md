@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- The manifest declares the health path of the service (`service.health_path: /health`), so the ecosystem status and the service registry of the SDK can probe it over HTTP and not only by its port.
 - Building no longer changes the version; raising it is the explicit `bump` command (`python tools/hydra_project_tool.py bump`). The build scripts only report the version they built, and CI fails if a build script runs a bump.
 - The build and run scripts use the Python of the `.venv` directly instead of an activate script, and create the venv with the `py` launcher when there is one; CI fails if a script activates a venv.
 - The banner follows the animated style of the ecosystem banners, with the name, the kind and the technologies of the project.
