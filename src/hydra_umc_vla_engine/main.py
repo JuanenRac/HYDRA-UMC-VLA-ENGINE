@@ -23,6 +23,7 @@ from pathlib import Path
 
 from . import __version__
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
+from .access import bind_problem, load_token
 from .api import VlaEngineServer
 from .hardware import EngineMode, check_engine_status
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
@@ -121,8 +122,17 @@ def _cmd_trajectory_integrate(args: argparse.Namespace) -> int:
 
 
 def _cmd_serve(args: argparse.Namespace) -> int:
-    server = VlaEngineServer((args.addr, args.port), args.workspace)
-    print(f"[vla-engine] HTTP API listening on {args.addr}:{args.port} (workspace={args.workspace})")
+    try:
+        token = load_token(args.token_file)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    problem = bind_problem(args.addr, token)
+    if problem:
+        print(f"error: {problem}", file=sys.stderr)
+        return 2
+    server = VlaEngineServer((args.addr, args.port), args.workspace, token)
+    print(f"[vla-engine] HTTP API listening on {args.addr}:{args.port} (workspace={args.workspace}; {'Bearer token required' if token else 'no token, loopback only'})")
     print("[vla-engine] POST /tokens/encode, POST /tokens/decode, POST /trajectory/integrate, GET /status, GET /stats")
     try:
         server.serve_forever()
@@ -179,6 +189,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     serve.add_argument("--addr", default="127.0.0.1", help="address to bind the HTTP API to")
     serve.add_argument("--port", type=int, default=8098, help="port for the HTTP API")
+    serve.add_argument("--token-file", default=None, help="file with the bearer token every request must present (or the HYDRA_UMC_VLA_ENGINE_TOKEN environment variable). Needed to bind an address that is not loopback.")
     serve.add_argument(
         "--workspace",
         type=Path,

@@ -20,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from .access import authorized, reject
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
 from .hardware import check_engine_status
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
@@ -118,6 +119,10 @@ def _strict_int(value: object, label: str) -> int:
     return value
 
 
+# GET path the project manifest declares as the health probe; it carries no token
+HEALTH_PATH = "/health"
+
+
 class Handler(BaseHTTPRequestHandler):
     server: "VlaEngineServer"
 
@@ -129,6 +134,10 @@ class Handler(BaseHTTPRequestHandler):
         pass  # quiet by default, same reasoning as this family's other api.py files
 
     def do_GET(self) -> None:  # noqa: N802
+        # the health path of the manifest stays open so the service registry can probe the service without the token
+        if urlparse(self.path).path != HEALTH_PATH and not authorized(self, self.server.token):
+            reject(self)
+            return
         path = urlparse(self.path).path
         if path == "/status":
             params = _query_params(self)
@@ -158,6 +167,9 @@ class Handler(BaseHTTPRequestHandler):
             _write_error(self, 404, "not found")
 
     def do_POST(self) -> None:  # noqa: N802
+        if not authorized(self, self.server.token):
+            reject(self)
+            return
         path = urlparse(self.path).path
         try:
             body = _read_json_body(self)
@@ -222,6 +234,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 class VlaEngineServer(ThreadingHTTPServer):
-    def __init__(self, address: tuple[str, int], workspace: Path) -> None:
+    def __init__(self, address: tuple[str, int], workspace: Path, token: str = "") -> None:
         super().__init__(address, Handler)
+        # empty means no token (loopback only; see access.py)
+        self.token = token
         self.workspace = workspace

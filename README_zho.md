@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Hailo-10">
 </p>
 
-**诚实核查 - 今天真正能运行的部分：** 动作 token 编码/解码（`action_tokens.py`）、带真实角度环绕处理的轨迹积分（`trajectory.py`）、模型清单的形状/置信度契约（`model_manifest.py`）、`status` 中诚实的硬件状态检查（`hardware.py`）、JSON/HTTP 接口（`api.py`），以及 HailoRT 集成边界（`hailo_runtime.py`）都是真实且经过测试的——98 个通过的测试（`pytest tests/`）。这些功能都不需要 VLA 模型或 Hailo-10 NPU 就能运行或测试——`tokens encode`/`tokens decode`/`trajectory integrate`/`status` 如今都能针对合成数据正常工作，并且 `status` 会刻意报告 `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference`，而不是伪装成"ready"。新增的 `Dockerfile` 复用了已经在真实 CM5 systemd 单元上验证过的相同 CLI 参数，但其本身尚未经过构建测试——这台开发机器上没有 Docker 运行时。真正的 VLA 模型推理、语义控制和零样本泛化仍然完全是愿景：目前还没有选定任何模型，而且这个环境也没有可以运行它的实体 Hailo-10 模块。具体已经交付了什么，请参见 `CHANGELOG.md`，以及下文第 1 节自己的功能列表中按功能划分的真实/未来对照。
+**诚实核查 - 今天真正能运行的部分：** 动作 token 编码/解码（`action_tokens.py`）、带真实角度环绕处理的轨迹积分（`trajectory.py`）、模型清单的形状/置信度契约（`model_manifest.py`）、`status` 中诚实的硬件状态检查（`hardware.py`）、JSON/HTTP 接口（`api.py`），以及 HailoRT 集成边界（`hailo_runtime.py`）都是真实且经过测试的——106 个通过的测试（`pytest tests/`）。这些功能都不需要 VLA 模型或 Hailo-10 NPU 就能运行或测试——`tokens encode`/`tokens decode`/`trajectory integrate`/`status` 如今都能针对合成数据正常工作，并且 `status` 会刻意报告 `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference`，而不是伪装成"ready"。新增的 `Dockerfile` 复用了已经在真实 CM5 systemd 单元上验证过的相同 CLI 参数，但其本身尚未经过构建测试——这台开发机器上没有 Docker 运行时。真正的 VLA 模型推理、语义控制和零样本泛化仍然完全是愿景：目前还没有选定任何模型，而且这个环境也没有可以运行它的实体 Hailo-10 模块。具体已经交付了什么，请参见 `CHANGELOG.md`，以及下文第 1 节自己的功能列表中按功能划分的真实/未来对照。
 
 **已知限制：** 轨迹只是提案：`POST /trajectory/integrate`（以及 CLI）会拒绝任何超出动作空间的增量（每步 0.05 m、0.1 rad，夹爪在 0 到 1 之间）以及超过 1000 步的序列，而不是去积分它们。解码后的"无运动"令牌在对称轴上恰好为 0.0（偶数词表没有以零为中心的区间，这会在每一步增加少量漂移）。旋转增量仍然直接加到欧拉角上，只有在远离 90 度俯仰角的小角度下才是良好的近似；这里没有推理，因此除了服务器的通用代理之外，家族中还没有任何东西使用这个输出。该服务在 systemd 下保持 `/dev` 可见（`DevicePolicy=closed` 并允许 `/dev/hailo0`），在容器中从 `HYDRA_UMC_WORKSPACE` 读取工作区，只接受自身工作区内部的 `?workspace=`，并且只有存在非空的 `.hef` 文件时才算有模型。
 
@@ -28,7 +28,7 @@
 |---|---|
 | 版本 | `0.1.7` |
 | 成熟度 | 可用 |
-| 测试 | 98 (`pytest tests/`) |
+| 测试 | 106 (`pytest tests/`) |
 | 技术栈 | Python / Vision-Language-Action model |
 | 目标 | HYDRA-UMC 工作单元的 Raspberry Pi CM5 |
 | 真实硬件 | 尚未：此版本没有在真实硬件上运行的记录 |
@@ -40,6 +40,7 @@
 目标是通过分析摄像头画面并生成相应的运动学序列,让机器人理解“拿起蓝色零件放到红色托盘上”之类的指令。目前该引擎只负责动作 token 的编码/解码,并在固定边界内对轨迹做积分;它不理解语言,也不理解图像。
 
 ### 关键特性：
+* 🔑 **可选的 Bearer 令牌：** 在回环地址上 API 不需要令牌；在非回环地址上，没有令牌就拒绝启动（`--token-file` 或 `HYDRA_UMC_VLA_ENGINE_TOKEN`）。设置令牌后，每个请求都必须发送 `Authorization: Bearer <token>`（恒定时间比较）；只有清单声明的健康路径 `GET /health` 保持开放。*(已实现)*
 * ✅ **真实 v0 —— 动作令牌与轨迹：** `action_tokens.py` 实现了 OpenVLA/RT-2 风格的 256-bin 离散化方案（连续动作 <-> 离散令牌，基于 7 自由度动作空间——位姿增量 + 夹爪），`trajectory.py` 将解码后的动作序列积分为绝对位姿轨迹。通过下方的 `tokens encode`/`tokens decode`/`trajectory integrate` 暴露——运行或测试都不需要 VLA 模型或 Hailo-10 NPU。
 * 🧯 **非数字永远不会变成动作：** `encode_action` 会拒绝 NaN 和无穷大（以前对 NaN 做限幅会选中上限，于是模型输出 NaN 就被编码成所有轴的最大动作），超出 2-65536 的 `vocab_size` 会被拒绝，HTTP API 会用 `400` 拒绝 JSON 字面量 `NaN`/`Infinity` 以及字符串 `"nan"`/`"inf"`。*（已实现）*
 * 📜 **模型清单 + 输出验证：** 一份真实的、带版本管理的契约（`model_manifest.py`），任何未来的模型集成都必须满足——匹配动作/词表形状以及已知的 Hailo 芯片系列——外加对模型原始推理输出的形状/置信度验证。*（已实现）*
@@ -177,7 +178,7 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 
 ## ✅ 当前状态与后续步骤
 
-**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 98 个测试和一个真实的 CLI。
+**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 106 个测试和一个真实的 CLI。
 
 **仍待完成，受限于真实硬件/真实模型：** 要真正运行推理,需要一个真实编译好的 VLA `.hef` 模型(为 Hailo-10 量化的 OpenVLA/RT-2——目前尚未选定具体模型)以及一块连接好的物理 Hailo-10 模块,这两者都是 `hailo_runtime.py` 自身无法消除的真实、不可避免的阻碍——但一旦模型存在,加载并解码它就不再是尚未编写的代码了。
 
