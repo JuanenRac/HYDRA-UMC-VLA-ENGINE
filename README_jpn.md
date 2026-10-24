@@ -104,6 +104,8 @@ flowchart LR
 ```text
 HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # ソースコード
+│   ├── __init__.py                 # パッケージの説明とバージョン
+│   ├── access.py                   # HTTP API 用の任意の Bearer トークン (ループバックでは不要、それ以外では必須)
 │   ├── action_tokens.py        # アクション <-> トークン離散化（OpenVLA/RT-2 スタイル）
 │   ├── trajectory.py           # アクションシーケンス -> 姿勢軌道の積分
 │   ├── guard.py                # 軌道ガード:作業空間、ステップ制限、ゾーン
@@ -117,6 +119,12 @@ HYDRA-UMC-VLA-ENGINE/
 ├── images/                     # メディアと図表
 ├── systemd/
 │   └── hydra-umc-vla-engine.service  # ローカルCM5上のトークン化/軌道APIのsystemdユニット
+├── tools/
+│   ├── build_test.py                 # バージョンを増やさないビルドチェック
+│   ├── ci_validate.py                # CI が使用するマニフェスト/CHANGELOG/ドキュメント検証
+│   ├── _doc_policy.py                # ファミリー共通のドキュメント規則 (HYDRA-UMC-SDK のコピーで、同期を維持)
+│   ├── _readme_parity.py             # 8つの README が同じ構造であることの検査 (HYDRA-UMC-SDK のコピーで、同期を維持)
+│   └── hydra_project_tool.py         # すべてのリポジトリで共通のコマンド: validate、test、ci、version、status、bump
 ├── build/                      # ローカルビルド出力（git 管理外）
 ├── pyproject.toml              # パッケージメタデータ（オドメーター式バージョン）
 ├── bump_version.py             # オドメーター式バージョンインクリメント（明示的な `bump` コマンドのみが実行）

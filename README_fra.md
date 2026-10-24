@@ -150,6 +150,8 @@ frères (Voice-UI, Semantic-Planner, Docs-QA) :
 ```text
 HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # Code source
+│   ├── __init__.py                 # Description et version du paquet
+│   ├── access.py                   # Jeton Bearer facultatif pour l'API HTTP (inutile en boucle locale, obligatoire en dehors)
 │   ├── action_tokens.py        # Discrétisation action <-> jeton (style OpenVLA/RT-2)
 │   ├── trajectory.py           # Intégration séquence d'actions -> trajectoire de poses
 │   ├── guard.py                # Garde de trajectoire : volume de travail, limites de pas, zones
@@ -163,10 +165,16 @@ HYDRA-UMC-VLA-ENGINE/
 ├── images/                     # Médias et diagrammes
 ├── systemd/
 │   └── hydra-umc-vla-engine.service  # Unité systemd de l'API locale de tokenisation/trajectoire sur la CM5
+├── tools/
+│   ├── build_test.py                 # Vérification de build sans versionnage
+│   ├── ci_validate.py                # Validation manifeste/CHANGELOG/docs utilisée par CI
+│   ├── _doc_policy.py                # Règles de documentation partagées par la famille (copie de celle de HYDRA-UMC-SDK, tenue synchronisée)
+│   ├── _readme_parity.py             # Contrôle que les huit README partagent la même structure (copie de celui de HYDRA-UMC-SDK, tenue synchronisée)
+│   └── hydra_project_tool.py         # Les mêmes commandes dans chaque dépôt : validate, test, ci, version, status, bump
 ├── build/                      # Sortie de build locale (ignorée par git)
-├── bump_manifest_version.py    # Synchronise la version de hydra-umc.project.json avec la version native (--sync)
 ├── pyproject.toml              # Métadonnées du paquet (version à incrément compteur kilométrique)
 ├── bump_version.py             # Incrément de version type compteur kilométrique (exécuté seulement par la commande `bump` explicite)
+├── bump_manifest_version.py    # Synchronise la version de hydra-umc.project.json avec la version native (--sync)
 ├── build.sh / build.bat        # Crée le venv, installe (avec extras dev), vérifie l'import, exécute les tests
 └── run.sh / run.bat            # Exécute le point d'entrée
 ```

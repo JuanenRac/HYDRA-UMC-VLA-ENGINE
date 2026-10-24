@@ -104,6 +104,8 @@ flowchart LR
 ```text
 HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # 源代码
+│   ├── __init__.py                 # 包说明与版本
+│   ├── access.py                   # HTTP API 的可选 Bearer 令牌 (本机回环无需,非回环时必须)
 │   ├── action_tokens.py        # 动作 <-> 令牌离散化（OpenVLA/RT-2 风格）
 │   ├── trajectory.py           # 动作序列 -> 位姿轨迹积分
 │   ├── guard.py                # 轨迹守卫：工作空间、步长限制、区域
@@ -117,6 +119,12 @@ HYDRA-UMC-VLA-ENGINE/
 ├── images/                     # 媒体与图表
 ├── systemd/
 │   └── hydra-umc-vla-engine.service  # 本地 CM5 令牌化/轨迹 API 的 systemd 单元
+├── tools/
+│   ├── build_test.py                 # 不递增版本号的构建检查
+│   ├── ci_validate.py                # CI 使用的清单/CHANGELOG/文档校验
+│   ├── _doc_policy.py                # 家族共享的文档规则 (HYDRA-UMC-SDK 的副本,保持同步)
+│   ├── _readme_parity.py             # 检查八个 README 结构一致 (HYDRA-UMC-SDK 的副本,保持同步)
+│   └── hydra_project_tool.py         # 每个仓库相同的命令: validate、test、ci、version、status、bump
 ├── build/                      # 本地构建输出（已被 git 忽略）
 ├── pyproject.toml              # 包元数据（里程表式递增版本号）
 ├── bump_version.py             # 里程表式版本递增（仅由显式 `bump` 命令运行）

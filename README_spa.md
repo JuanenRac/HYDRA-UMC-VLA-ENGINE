@@ -147,6 +147,8 @@ hermanos (Voice-UI, Semantic-Planner, Docs-QA):
 ```text
 HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # Código fuente
+│   ├── __init__.py                 # Descripción y versión del paquete
+│   ├── access.py                   # Token Bearer opcional para la API HTTP (no hace falta en loopback, obligatorio fuera de él)
 │   ├── action_tokens.py        # Discretizacion accion <-> token (estilo OpenVLA/RT-2)
 │   ├── trajectory.py           # Integracion de secuencia de acciones -> trayectoria de poses
 │   ├── guard.py                # Guarda de trayectoria: volumen de trabajo, límites de paso, zonas
@@ -160,6 +162,12 @@ HYDRA-UMC-VLA-ENGINE/
 ├── images/                     # Medios y diagramas
 ├── systemd/
 │   └── hydra-umc-vla-engine.service  # Unidad systemd de la API local de tokenización/trayectoria en la CM5
+├── tools/
+│   ├── build_test.py                 # Comprobación de compilación sin versionado
+│   ├── ci_validate.py                # Validación de manifiesto/CHANGELOG/docs usada por CI
+│   ├── _doc_policy.py                # Reglas de documentación compartidas por la familia (copia de la de HYDRA-UMC-SDK, mantenida en sincronía)
+│   ├── _readme_parity.py             # Comprobación de que los ocho README comparten estructura (copia de la de HYDRA-UMC-SDK, mantenida en sincronía)
+│   └── hydra_project_tool.py         # Los mismos comandos en todos los repositorios: validate, test, ci, version, status, bump
 ├── build/                      # Salida de build local (ignorada por git)
 ├── pyproject.toml              # Metadatos del paquete (versión con incremento cuentakilómetros)
 ├── bump_version.py             # Incremento de versión tipo cuentakilómetros (solo lo ejecuta el comando `bump` explícito)

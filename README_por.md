@@ -102,6 +102,8 @@ Este repositório é um **filho** da família Cognitive AI Node - o seu pai, o [
 ```text
 HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # Código-fonte
+│   ├── __init__.py                 # Descrição e versão do pacote
+│   ├── access.py                   # Token Bearer opcional para a API HTTP (dispensável em loopback, obrigatório fora dele)
 │   ├── action_tokens.py        # Discretização ação <-> token (ao estilo OpenVLA/RT-2)
 │   ├── trajectory.py           # Integração sequência de ações -> trajetória de poses
 │   ├── guard.py                # Guarda de trajetória: volume de trabalho, limites de passo, zonas
@@ -115,6 +117,12 @@ HYDRA-UMC-VLA-ENGINE/
 ├── images/                     # Multimédia e diagramas
 ├── systemd/
 │   └── hydra-umc-vla-engine.service  # Unidade systemd local do CM5 para a API de tokenização de ações/trajetórias
+├── tools/
+│   ├── build_test.py                 # Verificação de compilação sem alterar versões
+│   ├── ci_validate.py                # Validação de manifesto/CHANGELOG/docs usada pelo CI
+│   ├── _doc_policy.py                # Regras de documentação partilhadas pela família (cópia da de HYDRA-UMC-SDK, mantida em sincronia)
+│   ├── _readme_parity.py             # Verificação de que os oito README partilham a mesma estrutura (cópia da de HYDRA-UMC-SDK, mantida em sincronia)
+│   └── hydra_project_tool.py         # Os mesmos comandos em todos os repositórios: validate, test, ci, version, status, bump
 ├── build/                      # Saída de compilação local (ignorada pelo git)
 ├── pyproject.toml              # Metadados do pacote (versão subida em odómetro)
 ├── bump_version.py             # Subida de versão ao estilo conta-quilómetros (executada só pelo comando `bump` explícito)

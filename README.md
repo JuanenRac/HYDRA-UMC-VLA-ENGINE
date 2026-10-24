@@ -147,6 +147,8 @@ service into `docker-compose.yml` alongside its three siblings
 ```text
 HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # Source code
+│   ├── __init__.py                 # Package description and version
+│   ├── access.py                   # Optional Bearer token for the HTTP API (none needed on loopback, mandatory away from it)
 │   ├── action_tokens.py        # Action <-> token discretization (OpenVLA/RT-2-style)
 │   ├── trajectory.py           # Action-sequence -> pose-trajectory integration
 │   ├── guard.py                # Trajectory guard: work volume, step limits, zones
@@ -160,6 +162,12 @@ HYDRA-UMC-VLA-ENGINE/
 ├── images/                     # Media and diagrams
 ├── systemd/
 │   └── hydra-umc-vla-engine.service  # Local CM5 action-tokenization/trajectory API systemd unit
+├── tools/
+│   ├── build_test.py                 # Non-versioning build/compile check
+│   ├── ci_validate.py                # Manifest/CHANGELOG/docs validation used by CI
+│   ├── _doc_policy.py                # Documentation rules shared by the family (a copy of HYDRA-UMC-SDK's, kept in sync)
+│   ├── _readme_parity.py             # Check that the eight READMEs share one structure (a copy of HYDRA-UMC-SDK's, kept in sync)
+│   └── hydra_project_tool.py         # The same commands in every repository: validate, test, ci, version, status, bump
 ├── build/                      # Local build output (git-ignored)
 ├── pyproject.toml              # Package metadata (odometer-bumped version)
 ├── bump_version.py             # Odometer-style version bump (run only by the explicit `bump` command)
