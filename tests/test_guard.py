@@ -276,13 +276,13 @@ def test_the_cli_checks_a_trajectory_against_a_guard_file(tmp_path: Path, monkey
     cell.write_text(json.dumps(CELL), encoding="utf-8")
     actions = tmp_path / "a.json"
     actions.write_text(json.dumps([[0.05, 0, 0, 0, 0, 0, 0]]), encoding="utf-8")
-    monkeypatch.setattr("sys.argv", ["x", "trajectory", "integrate", "--start", "-0.3,0,0.3,0,0,0", "--actions", str(actions), "--guard-file", str(cell)])
+    monkeypatch.setattr("sys.argv", ["x", "trajectory", "integrate", "--start=-0.3,0,0.3,0,0,0", "--actions", str(actions), "--guard-file", str(cell)])
     assert engine_main.main() == 0
     captured = capsys.readouterr()
     assert "guard: clamped" in captured.err and "x=-0.280000" in captured.out
     many = tmp_path / "many.json"
     many.write_text(json.dumps([[0.02, 0, 0, 0, 0, 0, 0]] * 40), encoding="utf-8")
-    monkeypatch.setattr("sys.argv", ["x", "trajectory", "integrate", "--start", "-0.3,0,0.3,0,0,0", "--actions", str(many), "--guard-file", str(cell)])
+    monkeypatch.setattr("sys.argv", ["x", "trajectory", "integrate", "--start=-0.3,0,0.3,0,0,0", "--actions", str(many), "--guard-file", str(cell)])
     assert engine_main.main() == 1
     assert "guard: rejected" in capsys.readouterr().err
 
