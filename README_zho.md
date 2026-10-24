@@ -26,9 +26,9 @@
 
 | | |
 |---|---|
-| 版本 | `0.1.7` |
+| 版本 | `0.1.8` |
 | 成熟度 | 可用 |
-| 测试 | 106 (`pytest tests/`) |
+| 测试 | 98 (`pytest tests/`) |
 | 技术栈 | Python / Vision-Language-Action model |
 | 目标 | HYDRA-UMC 工作单元的 Raspberry Pi CM5 |
 | 真实硬件 | 尚未：此版本没有在真实硬件上运行的记录 |
@@ -138,7 +138,7 @@ run.bat
 `build.sh`/`build.bat` 不会更改版本号（只有 `python tools/hydra_project_tool.py bump` 才会提升）。`run.sh`（裸调用）的预期输出：
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.7
+HYDRA-UMC-VLA-ENGINE v0.1.8
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

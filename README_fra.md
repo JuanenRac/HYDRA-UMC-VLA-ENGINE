@@ -26,9 +26,9 @@
 
 | | |
 |---|---|
-| Version | `0.1.7` |
+| Version | `0.1.8` |
 | Maturité | Fonctionnel |
-| Tests | 106 (`pytest tests/`) |
+| Tests | 98 (`pytest tests/`) |
 | Technologie | Python / Vision-Language-Action model |
 | Cible | Le Raspberry Pi CM5 d'une cellule HYDRA-UMC |
 | Sur matériel réel | Pas encore : aucune exécution sur du matériel réel n'est consignée pour cette version |
@@ -187,7 +187,7 @@ run.bat
 attendue de `run.sh` (invocation nue) :
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.7
+HYDRA-UMC-VLA-ENGINE v0.1.8
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

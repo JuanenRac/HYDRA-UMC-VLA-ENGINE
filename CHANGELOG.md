@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [0.1.8] - A trajectory guard and optional Bearer token for the HTTP API
 
 - **A trajectory guard** (`guard.py`): the trajectory a model proposes is checked against a work volume, a longest linear and angular step, a limit on how much a step differs from the one before, the range of the gripper and the zones of HYDRA-UMC-SAFETY-ZONES in their own JSON (a move that enters or crosses a `danger` zone rejects it; a step in a `warning` zone is held to a fraction). Outcomes `ok`, `clamped` (cut back and re-integrated from the cut, so it stays continuous) and `rejected` (no poses; HTTP 422). `serve --guard-file` / `HYDRA_UMC_VLA_GUARD_FILE` turns it on for `POST /trajectory/integrate`, whose answer now carries a `guard` section (`not_configured` when there is none); `--require-guard` offers no trajectory without a guard; `trajectory integrate --guard-file` does the same on the command line. The READMEs now mark the camera-frame and SEMANTIC-PLANNER flows as planned: nothing feeds the engine frames today and nothing but the generic proxy of the server reads its output. Tested with synthetic trajectories.
 - **Optional Bearer token for the HTTP API.** `serve --token-file FILE` (or `HYDRA_UMC_VLA_ENGINE_TOKEN`, at least 16 characters) makes every request carry `Authorization: Bearer <token>` (constant-time comparison); only `GET /health`, the health path of the manifest, stays open. On loopback no token is needed; any other address is refused at start without one.
