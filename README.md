@@ -33,6 +33,19 @@
 | Target | The Raspberry Pi CM5 of a HYDRA-UMC cell |
 | On real hardware | Not yet: no run on real hardware is recorded for this version |
 
+## 🚦 Project status
+
+Each line is one part of this repository and the light says how far it is today. It is written from what the repository can show (tests, builds, runs), not from what is planned.
+
+🟢 Done and verified · 🟡 Works, with known limits · 🟠 Partly done or not verified yet · 🔴 Not done or not working
+
+| Area | State | What it means here |
+|---|---|---|
+| Software | 🟡 | Works for its main purpose; the honesty check above lists what is still missing |
+| Tests | 🟢 | 98 automated tests, run on every change |
+| Real hardware | 🔴 | Not yet: no run on real hardware is recorded for this version |
+| Documentation | 🟢 | README in eight languages, checked against the manifest on every change |
+
 ## 1. 🛠️ TECHNICAL OVERVIEW
 
 **HYDRA-UMC-VLA-ENGINE** is meant to be the multimodal bridge that translates visual context and natural language into direct robotic actions. It is intended to run quantized versions of state-of-the-art VLA models (like OpenVLA or specialized RT-2 variants) locally on the Hailo-10 NPU (planned: no model is chosen and no Hailo-10 inference exists yet).
