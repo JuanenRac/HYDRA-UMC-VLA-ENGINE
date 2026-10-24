@@ -44,6 +44,7 @@
 * ✅ **真实 v0 —— 动作令牌与轨迹：** `action_tokens.py` 实现了 OpenVLA/RT-2 风格的 256-bin 离散化方案（连续动作 <-> 离散令牌，基于 7 自由度动作空间——位姿增量 + 夹爪），`trajectory.py` 将解码后的动作序列积分为绝对位姿轨迹。通过下方的 `tokens encode`/`tokens decode`/`trajectory integrate` 暴露——运行或测试都不需要 VLA 模型或 Hailo-10 NPU。
 * 🧯 **非数字永远不会变成动作：** `encode_action` 会拒绝 NaN 和无穷大（以前对 NaN 做限幅会选中上限，于是模型输出 NaN 就被编码成所有轴的最大动作），超出 2-65536 的 `vocab_size` 会被拒绝，HTTP API 会用 `400` 拒绝 JSON 字面量 `NaN`/`Infinity` 以及字符串 `"nan"`/`"inf"`。*（已实现）*
 * 📜 **模型清单 + 输出验证：** 一份真实的、带版本管理的契约（`model_manifest.py`），任何未来的模型集成都必须满足——匹配动作/词表形状以及已知的 Hailo 芯片系列——外加对模型原始推理输出的形状/置信度验证。*（已实现）*
+* 🚧 **轨迹守卫:** `guard.py` 在请人批准之前，先按单元的限制检查轨迹：工作空间、最长步长(米和弧度)、一步与前一步的最大差异、夹爪范围，以及 HYDRA-UMC-SAFETY-ZONES 的区域(使用其自身的 JSON)。进入或穿过 `danger` 区域的移动会使轨迹被拒绝，位于 `warning` 区域内的步长被限制为一定比例。结果是 `ok`、`clamped`(某一步被截短，其余部分从截断处重新积分)或 `rejected`(不提供任何位姿，`422`)。`serve --guard-file 文件`(或 `HYDRA_UMC_VLA_GUARD_FILE`)为 `POST /trajectory/integrate` 启用它，`--require-guard` 在没有守卫时什么都不提供，`trajectory integrate --guard-file` 在命令行上做同样的事。提案从不授权任何东西。*(已用合成轨迹测试，不涉及模型或机器)*
 * 🔌 **HailoRT 集成边界，先于模块本身准备就绪：** `hailo_runtime.py` 依据真实、已确认的 `hailo_platform` API(`VDevice`、`HEF`、`ConfigureParams`、`InputVStreamParams`/`OutputVStreamParams`)编写——采用延迟导入,因此即使没有安装 `hailort` 包或没有 Hailo-10 模块存在,本仓库也能干净地安装/测试;并且 `hailo_output_to_tokens()`(将真实推理结果映射到本引擎自身令牌契约的部分)如今已完全被单元测试覆盖。*(已实现,仅为集成边界——详见下文)*
 * 🩺 **诚实的 `status` 子命令：** 报告真实的加速器/模型权重可用性——`no_accelerator`、`no_model_weights`，或 `hardware_ready_no_inference`——绝不是虚假的“就绪”状态。*（已实现）*
 * 🌉 **语义控制（计划中）：** 从像素和文本直接映射到关节位置或工具指令。*（需要真实的 VLA 模型——未来工作。）*
@@ -78,7 +79,7 @@ flowchart LR
 * **为何采用 `src/` 布局。** 使可安装的包（`hydra_umc_vla_engine`）与仓库根目录的工具（`bump_version.py`）分离，与生态系统中其他每个 Python 项目所使用的布局保持一致。
 * **为何动作令牌化先于模型推理落地。** 将连续动作转化为离散令牌（及其逆过程）是由动作空间的边界和词表大小定义的固定数学运算——编写和测试都不需要 VLA 模型或 Hailo-10 NPU，因此 v0 优先交付这一部分（`action_tokens.py`、`trajectory.py`）。真正的 VLA 推理需要本环境不具备的模型权重和 Hailo-10 硬件，将在后续落地。
 * **为何 `hailo_runtime.py` 仅在两个函数内部延迟导入 `hailo_platform`。** `hailort` 不在 PyPI 上,也没有安装在这台开发机器上——如果在模块加载时就导入它,会导致整个包在除了连接了真实 Hailo 模块的机器之外的任何地方都安装/导入失败。只有 `open_vdevice()` 和 `load_hailo_vla_model()`(真正需要真实 HailoRT 的那两个函数)会导入它,并且是延迟导入的;两者在缺少该模块时都会抛出明确的 `HailoNotAvailableError`,而不是一个普通的 `ImportError`。这与本生态系统已经用于其他所有真实硬件传输(GRBL 串口、MAVLink、SPI-OTA……)的模式相同。
-* **这如何融入生态系统的其余部分。** 本引擎将原始感知数据（概念上由上游 HYDRA-UMC-VISION-NODE 转发的摄像头帧）和自然语言指令转化为动作令牌，其同级项目 HYDRA-UMC-SEMANTIC-PLANNER 再将这些令牌转化为供 HYDRA-UMC-ORCHESTRATOR 使用的任务级决策。
+* **这如何融入生态系统的其余部分。** 本引擎将原始感知数据（概念上由上游 HYDRA-UMC-VISION-NODE 转发的摄像头帧）和自然语言指令转化为动作令牌，其同级项目 HYDRA-UMC-SEMANTIC-PLANNER 再将这些令牌转化为供 HYDRA-UMC-ORCHESTRATOR 使用的任务级决策。 *（计划中：目前引擎既不接收摄像头画面也不接收文本，除 HYDRA-UMC-SERVER 的通用代理外，没有任何模块使用它的输出。）*
 * **为何 `model_manifest.py` 不指定具体的 OpenVLA/RT-2 变体。** 目前实际上还没有选定任何模型（参见本 README 自身的路线图）——`EXPECTED_MODEL_MANIFEST` 老实说只是一份直接源自 `action_tokens.py` 自身真实常量的形状/目标契约，而不是一个为不存在的模型准备的加载器。`hailo_arch` 复用了与 `HYDRA-UMC-DETECTION-HEF` 已经用来验证其自身模型注册表的同一套真实的、封闭的芯片系列集合。
 * **为何 `status` 报告的是 `hardware_ready_no_inference` 而不是“就绪”。** 即便真实的 Hailo-10 设备和真实的模型权重都已具备，这个 v0 仍然没有真正的推理代码——在那个时点宣称就绪将是关于一项尚不存在的能力的真实谎言。`hardware.py` 的 `determine_mode()` 会先检查加速器（一次廉价的设备节点探测），再检查模型权重，这与 `HYDRA-UMC-DETECTION-HEF` 的 `safe_load()` 已经采用的“最廉价前提条件优先”的顺序相同。
 * **为何 `model_weights_available()` 检查的是父项目的 `models/`，而不是本地的。** 本子项目没有自己的 `models/`（已被省略——见上一条）——真实的共享权重存放在父项目 `HYDRA-UMC-COGNITIVE-NODE` 自身的 `models/` 中，位于同级工作区上一层，正是该仓库自身的 `check_shared_models()` 已经检查的那个真实目录。
@@ -92,6 +93,7 @@ HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # 源代码
 │   ├── action_tokens.py        # 动作 <-> 令牌离散化（OpenVLA/RT-2 风格）
 │   ├── trajectory.py           # 动作序列 -> 位姿轨迹积分
+│   ├── guard.py                # 轨迹守卫：工作空间、步长限制、区域
 │   ├── model_manifest.py       # 真实的模型形状契约 + 推理输出验证
 │   ├── hardware.py             # 真实的加速器/模型权重可用性探测
 │   ├── hailo_runtime.py        # 真实的 HailoRT（hailo_platform）集成边界，延迟导入

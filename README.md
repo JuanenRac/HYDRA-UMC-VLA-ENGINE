@@ -44,6 +44,7 @@ The goal is to let the robot understand commands such as "pick the blue componen
 * ✅ **Real v0 - action tokens & trajectory:** `action_tokens.py` implements the OpenVLA/RT-2-style 256-bin discretization scheme (continuous action <-> discrete token, per the 7-DOF pose-delta + gripper action space), and `trajectory.py` integrates a decoded action sequence into an absolute pose trajectory. Exposed via `tokens encode`/`tokens decode`/`trajectory integrate` below - no VLA model or Hailo-10 NPU needed to run or test it.
 * 🧯 **A non-number never becomes a movement:** `encode_action` rejects NaN and infinity (clamping a NaN picked the upper bound, so a model that produced NaN was encoded as the maximum movement on every axis), a `vocab_size` outside 2-65536 is refused, and the HTTP API rejects the JSON literals `NaN`/`Infinity` and the strings `"nan"`/`"inf"` with `400`. *(implemented)*
 * 📜 **Model manifest + output validation:** A real, versioned contract (`model_manifest.py`) any future model integration must satisfy - matching action/vocab shape and a known Hailo chip family - plus shape/confidence validation for a model's raw inference output. *(implemented)*
+* 🚧 **Trajectory guard:** `guard.py` checks a trajectory against the limits of the cell before anyone is asked to approve it: a work volume, the longest step (metres and radians), how much a step may differ from the one before, the range of the gripper, and the zones of HYDRA-UMC-SAFETY-ZONES in their own JSON (a move that enters or crosses a `danger` zone rejects the trajectory, a step inside a `warning` zone is held to a fraction). The outcome is `ok`, `clamped` (a step was cut back and the rest re-integrated from the cut) or `rejected` (no poses are offered, `422`). `serve --guard-file FILE` (or `HYDRA_UMC_VLA_GUARD_FILE`) turns it on for `POST /trajectory/integrate`, `--require-guard` offers nothing without it, and `trajectory integrate --guard-file` does the same on the command line. A proposal never authorizes anything. *(tested with synthetic trajectories; no model and no machine involved)*
 * 🔌 **HailoRT integration boundary, prepared ahead of the module:** `hailo_runtime.py` is written against the real, confirmed `hailo_platform` API (`VDevice`, `HEF`, `ConfigureParams`, `InputVStreamParams`/`OutputVStreamParams`) - lazily imported so this repo installs/tests cleanly with no `hailort` package or Hailo-10 module present, and `hailo_output_to_tokens()` (the piece that maps a real inference result onto this engine's own token contract) is fully unit-tested today. *(implemented, integration boundary only - see below)*
 * 🩺 **Honest `status` subcommand:** Reports real accelerator/model-weight availability - `no_accelerator`, `no_model_weights`, or `hardware_ready_no_inference` - never a fake "ready" state. *(implemented)*
 * 🌉 **Semantic Control (planned):** Direct mapping from pixels and text to joint positions or tool commands. *(needs a real VLA model - future work.)*
@@ -103,7 +104,7 @@ service into `docker-compose.yml` alongside its three siblings
   perception (camera frames, forwarded conceptually from
   HYDRA-UMC-VISION-NODE upstream) and natural-language instructions into
   action tokens that HYDRA-UMC-SEMANTIC-PLANNER, its sibling, turns into
-  mission-level decisions for HYDRA-UMC-ORCHESTRATOR.
+  mission-level decisions for HYDRA-UMC-ORCHESTRATOR. *(Planned: today the engine receives no camera frames and no text, and no module consumes its output besides the generic proxy of HYDRA-UMC-SERVER.)*
 * **Why `model_manifest.py` doesn't name a specific OpenVLA/RT-2
   variant.** No model has actually been chosen yet (see this README's
   own Roadmap) - `EXPECTED_MODEL_MANIFEST` is honestly a shape/target
@@ -135,6 +136,7 @@ HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # Source code
 │   ├── action_tokens.py        # Action <-> token discretization (OpenVLA/RT-2-style)
 │   ├── trajectory.py           # Action-sequence -> pose-trajectory integration
+│   ├── guard.py                # Trajectory guard: work volume, step limits, zones
 │   ├── model_manifest.py       # Real model shape contract + inference-output validation
 │   ├── hardware.py             # Real accelerator/model-weight availability probes
 │   ├── hailo_runtime.py        # Real HailoRT (hailo_platform) integration boundary, lazily imported

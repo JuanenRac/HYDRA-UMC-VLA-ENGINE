@@ -25,6 +25,7 @@ from . import __version__
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
 from .access import bind_problem, load_token
 from .api import VlaEngineServer
+from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
 from .hardware import EngineMode, check_engine_status
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
 
@@ -111,7 +112,15 @@ def _cmd_trajectory_integrate(args: argparse.Namespace) -> int:
         actions = [tuple(a) for a in actions_raw]
         start = Pose(*start_values, gripper=args.start_gripper)
         poses = integrate_trajectory(start, actions)
-    except (TokenizationError, TrajectoryError, OSError, json.JSONDecodeError) as exc:
+        if args.guard_file:
+            result = guard_trajectory(poses, load_limits(args.guard_file))
+            for reason in result.reasons:
+                print(f"guard: {reason}", file=sys.stderr)
+            print(f"guard: {result.outcome}", file=sys.stderr)
+            if result.outcome == REJECTED:
+                return 1
+            poses = result.poses
+    except (TokenizationError, TrajectoryError, GuardConfigError, OSError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
@@ -131,7 +140,22 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     if problem:
         print(f"error: {problem}", file=sys.stderr)
         return 2
-    server = VlaEngineServer((args.addr, args.port), args.workspace, token)
+    guard_path = args.guard_file or os.environ.get("HYDRA_UMC_VLA_GUARD_FILE")
+    guard = None
+    if guard_path:
+        try:
+            guard = load_limits(guard_path)
+        except GuardConfigError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+    if args.require_guard and guard is None:
+        print("error: --require-guard needs a guard file (--guard-file or HYDRA_UMC_VLA_GUARD_FILE)", file=sys.stderr)
+        return 2
+    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard)
+    if guard is None:
+        print("[vla-engine] no trajectory guard: trajectories are offered with guard=not_configured (give --guard-file to check them against the limits of the cell)")
+    else:
+        print(f"[vla-engine] trajectory guard from {guard_path}: work volume, step limits and {len(guard.zones)} zone(s)")
     print(f"[vla-engine] HTTP API listening on {args.addr}:{args.port} (workspace={args.workspace}; {'Bearer token required' if token else 'no token, loopback only'})")
     print("[vla-engine] POST /tokens/encode, POST /tokens/decode, POST /trajectory/integrate, GET /status, GET /stats")
     try:
@@ -168,6 +192,7 @@ def _build_parser() -> argparse.ArgumentParser:
     integrate.add_argument("--start", required=True, help="x,y,z,roll,pitch,yaw")
     integrate.add_argument("--start-gripper", type=float, default=0.0, dest="start_gripper")
     integrate.add_argument("--actions", required=True, help="Path to a JSON array of [dx,dy,dz,droll,dpitch,dyaw,gripper] arrays")
+    integrate.add_argument("--guard-file", default=None, dest="guard_file", help="Check the trajectory against the limits and zones of the cell in this JSON file (see guard.py); a rejected trajectory exits 1")
     integrate.set_defaults(func=_cmd_trajectory_integrate)
 
     status = subparsers.add_parser(
@@ -196,6 +221,8 @@ def _build_parser() -> argparse.ArgumentParser:
         default=_DEFAULT_WORKSPACE,
         help="Default workspace for GET /status when it is not overridden per-request.",
     )
+    serve.add_argument("--guard-file", default=None, dest="guard_file", help="JSON file with the work volume, step limits and zones every trajectory is checked against (or HYDRA_UMC_VLA_GUARD_FILE)")
+    serve.add_argument("--require-guard", action="store_true", dest="require_guard", help="Offer no trajectory at all unless a guard file is loaded")
     serve.set_defaults(func=_cmd_serve)
 
     return parser

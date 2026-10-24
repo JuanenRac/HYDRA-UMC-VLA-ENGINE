@@ -21,6 +21,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from .access import authorized, reject
+from .guard import REJECTED, GuardLimits, guard_trajectory
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
 from .hardware import check_engine_status
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
@@ -229,13 +230,37 @@ class Handler(BaseHTTPRequestHandler):
         except (TokenizationError, TrajectoryError, ValueError, TypeError) as e:
             _write_error(self, 400, str(e))
             return
+        guard_info: dict
+        if self.server.guard is not None:
+            result = guard_trajectory(poses, self.server.guard)
+            guard_info = result.as_dict()
+            if result.outcome == REJECTED:
+                # a trajectory the guard refuses is not shown as a proposal at all
+                _write_json(self, 422, {"error": "the trajectory guard rejected the trajectory", "guard": guard_info})
+                return
+            poses = result.poses
+        elif self.server.require_guard:
+            _write_error(self, 503, "this engine was started with --require-guard and has no guard file: no trajectory is offered")
+            return
+        else:
+            guard_info = {"outcome": "not_configured", "reasons": [], "rejected_at_step": None}
         pose_dicts = [asdict(p) for p in poses]
-        _write_json(self, 200, {"poses": pose_dicts, "proposal": proposal_record(pose_dicts)})
+        _write_json(self, 200, {"poses": pose_dicts, "guard": guard_info, "proposal": proposal_record(pose_dicts)})
 
 
 class VlaEngineServer(ThreadingHTTPServer):
-    def __init__(self, address: tuple[str, int], workspace: Path, token: str = "") -> None:
+    def __init__(
+        self,
+        address: tuple[str, int],
+        workspace: Path,
+        token: str = "",
+        guard: GuardLimits | None = None,
+        require_guard: bool = False,
+    ) -> None:
         super().__init__(address, Handler)
+        # the limits of the cell every trajectory is checked against (guard.py); with require_guard no trajectory is offered without them
+        self.guard = guard
+        self.require_guard = require_guard
         # empty means no token (loopback only; see access.py)
         self.token = token
         self.workspace = workspace

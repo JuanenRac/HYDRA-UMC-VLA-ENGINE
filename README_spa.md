@@ -44,6 +44,7 @@ El objetivo es que el robot entienda órdenes como «coge el componente azul y c
 * ✅ **Real v0 - tokens de acción y trayectoria:** `action_tokens.py` implementa el esquema de discretización de 256 bins estilo OpenVLA/RT-2 (acción continua <-> token discreto, según el espacio de acción de 7 grados de libertad - delta de pose + gripper), y `trajectory.py` integra una secuencia de acciones decodificadas en una trayectoria de poses absolutas. Expuesto vía `tokens encode`/`tokens decode`/`trajectory integrate` más abajo - no hace falta modelo VLA ni NPU Hailo-10 para ejecutarlo ni testearlo.
 * 🧯 **Algo que no es un número nunca se convierte en un movimiento:** `encode_action` rechaza NaN e infinito (al acotar un NaN se elegía el límite superior, así que una salida NaN del modelo se codificaba como el movimiento máximo en todos los ejes), se rechaza un `vocab_size` fuera de 2-65536 y la API HTTP rechaza con `400` los literales JSON `NaN`/`Infinity` y las cadenas `"nan"`/`"inf"`. *(implementado)*
 * 📜 **Manifiesto de modelo + validación de salida:** Un contrato real y versionado (`model_manifest.py`) que cualquier futura integración de modelo debe cumplir - haciendo coincidir la forma de acción/vocabulario y una familia de chip Hailo conocida - además de validación de forma/confianza para la salida cruda de inferencia de un modelo. *(implementado)*
+* 🚧 **Guarda de trayectoria:** `guard.py` comprueba una trayectoria contra los límites de la celda antes de pedir a nadie que la apruebe: un volumen de trabajo, el paso más largo (metros y radianes), cuánto puede diferir un paso del anterior, el rango de la pinza y las zonas de HYDRA-UMC-SAFETY-ZONES en su propio JSON (un movimiento que entra o cruza una zona `danger` rechaza la trayectoria, un paso dentro de una zona `warning` se limita a una fracción). El resultado es `ok`, `clamped` (se recortó un paso y el resto se reintegró desde el recorte) o `rejected` (no se ofrece ninguna pose, `422`). `serve --guard-file FICHERO` (o `HYDRA_UMC_VLA_GUARD_FILE`) la activa para `POST /trajectory/integrate`, `--require-guard` no ofrece nada sin ella, y `trajectory integrate --guard-file` hace lo mismo por línea de órdenes. Una propuesta nunca autoriza nada. *(probado con trayectorias sintéticas; sin modelo ni máquina)*
 * 🔌 **Límite de integración con HailoRT, preparado antes que el módulo:** `hailo_runtime.py` está escrito contra la API real y confirmada de `hailo_platform` (`VDevice`, `HEF`, `ConfigureParams`, `InputVStreamParams`/`OutputVStreamParams`) - importada de forma perezosa para que este repositorio se instale/testee limpiamente sin el paquete `hailort` ni un módulo Hailo-10 presente, y `hailo_output_to_tokens()` (la pieza que mapea un resultado de inferencia real al propio contrato de tokens de este motor) está completamente cubierta por tests unitarios hoy. *(implementado, solo límite de integración - ver más abajo)*
 * 🩺 **Subcomando `status` honesto:** Reporta la disponibilidad real de acelerador/pesos de modelo - `no_accelerator`, `no_model_weights`, o `hardware_ready_no_inference` - nunca un falso estado "listo". *(implementado)*
 * 🌉 **Control Semántico (previsto):** Mapeo directo desde píxeles y texto a posiciones de articulaciones o comandos de herramienta. *(necesita un modelo VLA real - trabajo futuro.)*
@@ -101,7 +102,7 @@ hermanos (Voice-UI, Semantic-Planner, Docs-QA):
   percepción bruta (frames de cámara, conceptualmente reenviados desde
   HYDRA-UMC-VISION-NODE aguas arriba) e instrucciones en lenguaje natural
   en tokens de acción que su hermano HYDRA-UMC-SEMANTIC-PLANNER convierte
-  en decisiones de misión para HYDRA-UMC-ORCHESTRATOR.
+  en decisiones de misión para HYDRA-UMC-ORCHESTRATOR. *(Previsto: hoy el motor no recibe fotogramas de cámara ni texto, y ningún módulo consume su salida salvo el proxy genérico de HYDRA-UMC-SERVER.)*
 * **Por qué `model_manifest.py` no nombra una variante específica de
   OpenVLA/RT-2.** Todavía no se ha elegido ningún modelo (ver la Hoja de
   Ruta de este mismo README) - `EXPECTED_MODEL_MANIFEST` es honestamente
@@ -135,6 +136,7 @@ HYDRA-UMC-VLA-ENGINE/
 ├── src/hydra_umc_vla_engine/   # Código fuente
 │   ├── action_tokens.py        # Discretizacion accion <-> token (estilo OpenVLA/RT-2)
 │   ├── trajectory.py           # Integracion de secuencia de acciones -> trayectoria de poses
+│   ├── guard.py                # Guarda de trayectoria: volumen de trabajo, límites de paso, zonas
 │   ├── model_manifest.py       # Contrato real de forma de modelo + validación de salida de inferencia
 │   ├── hardware.py             # Sondas reales de disponibilidad de acelerador/pesos de modelo
 │   ├── hailo_runtime.py        # Limite real de integracion HailoRT (hailo_platform), importada de forma perezosa
