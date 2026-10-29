@@ -1,0 +1,165 @@
+{
+  "repo": "HYDRA-UMC-VLA-ENGINE",
+  "ecosystem": "hydra",
+  "tagline": "Tokens, trajectories and a guard: everything a VLA needs around the model, with no model yet.",
+  "description": "HYDRA-UMC-VLA-ENGINE encodes actions as tokens, integrates predicted deltas into a trajectory, guards the trajectory against the work volume, step limits, danger zones and gripper range, and reports whether the Hailo-10 device and model weights are present.",
+  "columns": [
+    "WHO CALLS IT",
+    "THIS REPOSITORY",
+    "WHAT IS NOT HERE YET"
+  ],
+  "nodes": [
+    {
+      "id": "cli",
+      "column": 0,
+      "level": "tested",
+      "title": "CLI",
+      "lines": [
+        "tokens, trajectory,",
+        "status, serve"
+      ],
+      "code": [
+        "src/hydra_umc_vla_engine/main.py"
+      ]
+    },
+    {
+      "id": "http",
+      "column": 0,
+      "level": "tested",
+      "title": "HTTP API",
+      "lines": [
+        "port 8098; token file or",
+        "environment variable"
+      ],
+      "code": [
+        "src/hydra_umc_vla_engine/api.py",
+        "src/hydra_umc_vla_engine/access.py"
+      ]
+    },
+    {
+      "id": "mod",
+      "column": 2,
+      "level": "untested",
+      "title": "VLA model on Hailo-10",
+      "lines": [
+        "not chosen, not run"
+      ]
+    },
+    {
+      "id": "sz",
+      "column": 2,
+      "level": "contract",
+      "title": "SAFETY-ZONES file",
+      "lines": [
+        "same JSON of zones for",
+        "the guard"
+      ]
+    },
+    {
+      "id": "tok",
+      "column": 1,
+      "level": "tested",
+      "title": "action_tokens.py",
+      "lines": [
+        "actions to bin ids and",
+        "back, seven values"
+      ],
+      "code": [
+        "src/hydra_umc_vla_engine/action_tokens.py"
+      ]
+    },
+    {
+      "id": "trj",
+      "column": 1,
+      "level": "tested",
+      "title": "trajectory.py",
+      "lines": [
+        "integrates predicted",
+        "deltas into poses"
+      ],
+      "code": [
+        "src/hydra_umc_vla_engine/trajectory.py"
+      ]
+    },
+    {
+      "id": "hw",
+      "column": 1,
+      "level": "tested",
+      "title": "hardware + hailo_runtime",
+      "lines": [
+        "is a Hailo-10 node and",
+        "the model present?"
+      ],
+      "code": [
+        "src/hydra_umc_vla_engine/hardware.py",
+        "src/hydra_umc_vla_engine/hailo_runtime.py"
+      ]
+    },
+    {
+      "id": "grd",
+      "column": 1,
+      "level": "tested",
+      "title": "guard.py",
+      "lines": [
+        "ok, clamped or rejected;",
+        "limits come from the cell"
+      ],
+      "code": [
+        "src/hydra_umc_vla_engine/guard.py"
+      ]
+    },
+    {
+      "id": "mm",
+      "column": 1,
+      "level": "tested",
+      "title": "model_manifest.py",
+      "lines": [
+        "the contract a future",
+        "model must meet"
+      ],
+      "code": [
+        "src/hydra_umc_vla_engine/model_manifest.py"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "cli",
+      "to": "tok",
+      "level": "tested"
+    },
+    {
+      "from": "http",
+      "to": "tok",
+      "level": "tested"
+    },
+    {
+      "from": "tok",
+      "to": "trj",
+      "level": "tested"
+    },
+    {
+      "from": "trj",
+      "to": "grd",
+      "level": "tested"
+    },
+    {
+      "from": "mm",
+      "to": "hw",
+      "level": "tested"
+    },
+    {
+      "from": "sz",
+      "to": "grd",
+      "level": "contract",
+      "label": "zones"
+    },
+    {
+      "from": "hw",
+      "to": "mod",
+      "level": "untested",
+      "label": "probes"
+    }
+  ],
+  "footer": "Tried with numbers and the HTTP API on a computer; no Hailo-10 and no model were involved."
+}

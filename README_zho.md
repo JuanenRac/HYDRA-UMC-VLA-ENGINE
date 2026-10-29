@@ -1,26 +1,33 @@
+<!-- =============================================================================
+HYDRA-UMC-VLA-ENGINE - Vision-language-action engine contracts
+Copyright (C) JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
+GPL-3.0-or-later - see LICENSE
+============================================================================= -->
+
 <p align="center">
   <img src="images/HYDRA_UMC_BANNER.svg" alt="HYDRA-UMC-VLA-ENGINE banner" width="100%">
 </p>
 
-# 👁️ HYDRA-UMC-VLA-ENGINE
+# 🤖 HYDRA-UMC-VLA-ENGINE
 
 <p align="center"><a href="README.md">🇺🇸 English</a> | <a href="README_spa.md">🇪🇸 Español</a> | <a href="README_fra.md">🇫🇷 Français</a> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | 🇨🇳 <b>简体中文</b> | <a href="README_jpn.md">🇯🇵 日本語</a> | <a href="README_por.md">🇵🇹 Português</a></p>
 
 ### 🤖 面向机器人的多模态视觉-语言-动作框架
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Licencia-GPL%203.0-blue.svg" alt="GPL 3.0">
-  <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="VLA">
-  <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Hailo-10">
+  <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
+  <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
+  <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
+  <img src="https://img.shields.io/badge/Tests-138%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
-
-**诚实核查 - 今天真正能运行的部分：** 动作 token 编码/解码（`action_tokens.py`）、带真实角度环绕处理的轨迹积分（`trajectory.py`）、模型清单的形状/置信度契约（`model_manifest.py`）、`status` 中诚实的硬件状态检查（`hardware.py`）、JSON/HTTP 接口（`api.py`），以及 HailoRT 集成边界（`hailo_runtime.py`）都是真实且经过测试的——106 个通过的测试（`pytest tests/`）。这些功能都不需要 VLA 模型或 Hailo-10 NPU 就能运行或测试——`tokens encode`/`tokens decode`/`trajectory integrate`/`status` 如今都能针对合成数据正常工作，并且 `status` 会刻意报告 `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference`，而不是伪装成"ready"。新增的 `Dockerfile` 复用了已经在真实 CM5 systemd 单元上验证过的相同 CLI 参数，但其本身尚未经过构建测试——这台开发机器上没有 Docker 运行时。真正的 VLA 模型推理、语义控制和零样本泛化仍然完全是愿景：目前还没有选定任何模型，而且这个环境也没有可以运行它的实体 Hailo-10 模块。具体已经交付了什么，请参见 `CHANGELOG.md`，以及下文第 1 节自己的功能列表中按功能划分的真实/未来对照。
-
-**已知限制：** 轨迹只是提案：`POST /trajectory/integrate`（以及 CLI）会拒绝任何超出动作空间的增量（每步 0.05 m、0.1 rad，夹爪在 0 到 1 之间）以及超过 1000 步的序列，而不是去积分它们。解码后的"无运动"令牌在对称轴上恰好为 0.0（偶数词表没有以零为中心的区间，这会在每一步增加少量漂移）。旋转增量仍然直接加到欧拉角上，只有在远离 90 度俯仰角的小角度下才是良好的近似；这里没有推理，因此除了服务器的通用代理之外，家族中还没有任何东西使用这个输出。该服务在 systemd 下保持 `/dev` 可见（`DevicePolicy=closed` 并允许 `/dev/hailo0`），在容器中从 `HYDRA_UMC_WORKSPACE` 读取工作区，只接受自身工作区内部的 `?workspace=`，并且只有存在非空的 `.hef` 文件时才算有模型。
 
 ---
 
 > **安全与安防现状:**本生态系统不是经认证的安全系统。目前尚无硬件 E-STOP 通路,没有由固件强制执行的限位或联锁,也没有经过验证的运动指令;固件映像使用 CRC32 和共享密钥的 HMAC-SHA256 校验,而非非对称签名;TLS 与双向 TLS 均为可选项,默认关闭;自制电路板尚未组装或测试。在依赖此处任何说法来保障人身安全之前,请先阅读[安全基线](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md)和[威胁模型](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md)。
+
+---
 
 ## 📋 速览
 
@@ -28,10 +35,12 @@
 |---|---|
 | 版本 | `0.1.8` |
 | 成熟度 | 可用 |
-| 测试 | 98 (`pytest tests/`) |
+| 测试 | 138 (`python -m pytest -q tests`) |
 | 技术栈 | Python / Vision-Language-Action model |
 | 目标 | HYDRA-UMC 工作单元的 Raspberry Pi CM5 |
 | 真实硬件 | 尚未：此版本没有在真实硬件上运行的记录 |
+
+**跳转：** [概述](#-概述) · [架构](#-架构) · [快速开始](#-快速开始) · [测试](#-测试) · [仓库结构](#-仓库结构) · [相关项目](#-相关项目)
 
 ## 🚦 项目状态
 
@@ -42,11 +51,11 @@
 | 领域 | 状态 | 在这里的含义 |
 |---|---|---|
 | 软件 | 🟡 | 主要用途可用；上面的诚实性检查列出了仍然缺少的内容 |
-| 测试 | 🟢 | 98 项自动测试，每次变更都会运行 |
+| 测试 | 🟢 | 138 项自动测试，每次变更都会运行 |
 | 真实硬件 | 🔴 | 尚未：此版本没有在真实硬件上运行的记录 |
 | 文档 | 🟢 | 八种语言的 README，每次变更都会与清单核对 |
 
-## 1. 🛠️ 技术概述
+## 🎯 概述
 
 **HYDRA-UMC-VLA-ENGINE** 的目标是成为将视觉上下文和自然语言转换为直接机器人动作的多模态桥梁。设想在 Hailo-10 NPU 上本地运行最先进 VLA 模型(如 OpenVLA 或 RT-2 的专用变体)的量化版本(计划中:尚未选定模型,也还没有 Hailo-10 推理)。
 
@@ -66,11 +75,19 @@
 * 🛠️ **任务规划（计划中）：** 将复杂目标分解为原子级的机器人操作单元。*（需要真实的 VLA 模型。）*
 * 👨‍👩‍👧 **认知 AI 节点子项目：** 作为
   [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) 下 4 个同级服务之一运行（与 Voice-UI、Semantic-Planner 和 Docs-QA 并列），共享父项目的 HydraOS 镜像和模型权重，而非各自保留独立副本。
-* 📦 **里程表式版本管理：** `pyproject.toml` 中的版本只由显式的 `bump` 命令提升（`python tools/hydra_project_tool.py bump`，它会运行 `bump_version.py`）- 构建绝不会更改它。
 
----
+## 🧩 在 HYDRA-UMC 中的角色
 
-## 2. 🔄 VLA 推理流程
+**HYDRA-UMC-VLA-ENGINE** 包含视觉-语言-动作引擎中不需要模型的部分：把动作转换为离散令牌并还原，把预测的步骤积分成轨迹，以及根据工作空间、速度限制、安全区域和夹爪范围裁剪或拒绝轨迹的守卫。目前还没有模型运行；Hailo-10 边界只报告现有的东西。
+
+## 🏛️ 架构
+
+<p align="center">
+  <img src="images/architecture.svg" alt="HYDRA-UMC-VLA-ENGINE architecture" width="100%">
+</p>
+
+<details>
+<summary>图表的文本版本（Mermaid）</summary>
 
 ```mermaid
 flowchart LR
@@ -81,9 +98,9 @@ flowchart LR
     TRAJ --> MOTOR["Motor Commands"]
 ```
 
----
+</details>
 
-## 3. 🧱 架构与设计决策
+### 架构与设计决策
 
 本仓库是 Cognitive AI Node 系列的**子项目**——其父项目
 [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) 拥有共享的 HydraOS 镜像和量化模型权重，并将本服务与其另外 3 个同级项目（Voice-UI、Semantic-Planner、Docs-QA）一同接入 `docker-compose.yml`：
@@ -97,51 +114,25 @@ flowchart LR
 * **为何 `status` 报告的是 `hardware_ready_no_inference` 而不是“就绪”。** 即便真实的 Hailo-10 设备和真实的模型权重都已具备，这个 v0 仍然没有真正的推理代码——在那个时点宣称就绪将是关于一项尚不存在的能力的真实谎言。`hardware.py` 的 `determine_mode()` 会先检查加速器（一次廉价的设备节点探测），再检查模型权重，这与 `HYDRA-UMC-DETECTION-HEF` 的 `safe_load()` 已经采用的“最廉价前提条件优先”的顺序相同。
 * **为何 `model_weights_available()` 检查的是父项目的 `models/`，而不是本地的。** 本子项目没有自己的 `models/`（已被省略——见上一条）——真实的共享权重存放在父项目 `HYDRA-UMC-COGNITIVE-NODE` 自身的 `models/` 中，位于同级工作区上一层，正是该仓库自身的 `check_shared_models()` 已经检查的那个真实目录。
 
----
+## 🚀 快速开始
 
-## 📂 目录结构
+需要 Python 3.10 或更高版本。
 
-```text
-HYDRA-UMC-VLA-ENGINE/
-├── src/hydra_umc_vla_engine/   # 源代码
-│   ├── __init__.py                 # 包说明与版本
-│   ├── access.py                   # HTTP API 的可选 Bearer 令牌 (本机回环无需,非回环时必须)
-│   ├── action_tokens.py        # 动作 <-> 令牌离散化（OpenVLA/RT-2 风格）
-│   ├── trajectory.py           # 动作序列 -> 位姿轨迹积分
-│   ├── guard.py                # 轨迹守卫：工作空间、步长限制、区域
-│   ├── model_manifest.py       # 真实的模型形状契约 + 推理输出验证
-│   ├── hardware.py             # 真实的加速器/模型权重可用性探测
-│   ├── hailo_runtime.py        # 真实的 HailoRT（hailo_platform）集成边界，延迟导入
-│   ├── api.py                  # 简洁的 JSON/HTTP 接口(基于 stdlib http.server),桥接 tokens/trajectory/status
-│   └── main.py                 # CLI 入口点（裸调用 + `tokens`/`trajectory`/`status`）
-├── tests/                      # 真实 pytest 套件（action_tokens、trajectory、manifest、hardware、hailo_runtime、api、CLI）
-├── docs/                       # 文档与基准测试
-├── images/                     # 媒体与图表
-├── systemd/
-│   └── hydra-umc-vla-engine.service  # 本地 CM5 令牌化/轨迹 API 的 systemd 单元
-├── tools/
-│   ├── build_test.py                 # 不递增版本号的构建检查
-│   ├── ci_validate.py                # CI 使用的清单/CHANGELOG/文档校验
-│   ├── _doc_policy.py                # 家族共享的文档规则 (HYDRA-UMC-SDK 的副本,保持同步)
-│   ├── _readme_parity.py             # 检查八个 README 结构一致 (HYDRA-UMC-SDK 的副本,保持同步)
-│   └── hydra_project_tool.py         # 每个仓库相同的命令: validate、test、ci、version、status、bump
-├── build/                      # 本地构建输出（已被 git 忽略）
-├── pyproject.toml              # 包元数据（里程表式递增版本号）
-├── bump_version.py             # 里程表式版本递增（仅由显式 `bump` 命令运行）
-├── bump_manifest_version.py    # 将 hydra-umc.project.json 的版本与原生版本同步(--sync)
-├── build.sh / build.bat        # 创建 venv、安装（含 dev 附加项）、验证导入、运行测试
-└── run.sh / run.bat            # 运行入口点
+```bash
+./build.sh  # Linux, macOS (build.bat on Windows)
+./run.sh tokens encode --action 0.02,0.00,-0.01,0.0,0.0,0.05,1.0
+./run.sh trajectory integrate --start 0,0,0,0,0,0 --actions actions.json
+./run.sh status
+./run.sh serve --port 8098
 ```
 
-> **注意：** `hardware/` 和 `firmware/` 已被省略——本节点运行在现成的
-> CM5 + Hailo-10 M.2 模块上，没有自己的硬件/固件设计。`os/` 和
-> `models/` 也已被省略——HydraOS 镜像和共享的 Hailo-10 模型权重存放在
-> 父项目 `HYDRA-UMC-COGNITIVE-NODE` 中，本项目作为一项服务接入其中
-> （见其 `docker-compose.yml`）。
+## 🧪 测试
 
----
+运行 `python -m pytest -q tests` 会执行 138 个自动测试。 不需要硬件，也不需要这台机器以外的任何东西。
 
-## ⚙️ 构建与运行
+CI 运行 `HYDRA_UMC_CI=1 python tools/ci_validate.py`，检查清单、文档、八个 README 和图片。
+
+## 🏗️ 构建与发布
 
 需要 Python >= 3.10。
 
@@ -197,23 +188,68 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 * **`pip install -e .` 失败。** 通常是 `.venv/` 已过期。删除 `.venv/` 文件夹并重新运行 `./build.sh`/`build.bat` 重新创建它。
 * **`import OK` 从未打印。** 意味着 `python -c "import hydra_umc_vla_engine"` 本身失败了——在激活 venv 的情况下重新运行以查看真实的回溯信息。
 
----
+## 📂 仓库结构
 
-## ✅ 当前状态与后续步骤
+<p align="center">
+  <img src="images/repository-structure.svg" alt="Repository structure of HYDRA-UMC-VLA-ENGINE" width="100%">
+</p>
 
-**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 106 个测试和一个真实的 CLI。
+<details>
+<summary>目录树的文本版本</summary>
+
+```text
+HYDRA-UMC-VLA-ENGINE/
+├── src/hydra_umc_vla_engine/   源代码
+│   ├── __init__.py             包说明与版本
+│   ├── access.py               HTTP API 的可选 Bearer 令牌 (本机回环无需,非回环时必须)
+│   ├── action_tokens.py        动作 <-> 令牌离散化（OpenVLA/RT-2 风格）
+│   ├── trajectory.py           动作序列 -> 位姿轨迹积分
+│   ├── guard.py                轨迹守卫：工作空间、步长限制、区域
+│   ├── model_manifest.py       真实的模型形状契约 + 推理输出验证
+│   ├── hardware.py             真实的加速器/模型权重可用性探测
+│   ├── hailo_runtime.py        真实的 HailoRT（hailo_platform）集成边界，延迟导入
+│   ├── api.py                  简洁的 JSON/HTTP 接口(基于 stdlib http.server),桥接 tokens/trajectory/status
+│   └── main.py                 CLI 入口点（裸调用 + `tokens`/`trajectory`/`status`）
+├── tests/                      真实 pytest 套件（action_tokens、trajectory、manifest、hardware、hailo_runtime、api、CLI）
+├── docs/                       文档与基准测试
+├── images/                     媒体与图表
+├── systemd/                    服务单元
+├── tools/                      项目工具和 CI 检查
+├── .github/                    CI 工作流和 Issue 模板
+├── pyproject.toml              包的元数据
+├── bump_version.py             显式提升版本
+├── bump_manifest_version.py    将 hydra-umc.project.json 的版本与原生版本同步(--sync)
+├── build.sh / build.bat        创建 venv、安装（含 dev 附加项）、验证导入、运行测试
+├── run.sh / run.bat            运行入口点
+├── CHANGELOG.md                每个版本的变更
+├── Dockerfile                  容器镜像
+├── build-test.sh               不修改内容的构建检查
+├── hydra-umc.project.json      清单：版本、成熟度、系列
+└── test.sh                     运行测试
+```
+
+</details>
+
+## 🗺️ 路线图与已知限制
+
+**当前已知限制**
+
+### 当前状态与后续步骤
+
+**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 138 个测试和一个真实的 CLI。
 
 **仍待完成，受限于真实硬件/真实模型：** 要真正运行推理,需要一个真实编译好的 VLA `.hef` 模型(为 Hailo-10 量化的 OpenVLA/RT-2——目前尚未选定具体模型)以及一块连接好的物理 Hailo-10 模块,这两者都是 `hailo_runtime.py` 自身无法消除的真实、不可避免的阻碍——但一旦模型存在,加载并解码它就不再是尚未编写的代码了。
 
----
+### 路线图
 
-## 🚀 路线图
 * **第一阶段：** 在 Hailo-10 上部署 VLA 引擎并进行多模态输入处理。
 * **第二阶段：** 语义规划器与集群行为模型及长期记忆的集成。
 * **第三阶段：** 语音 UI 的低延迟本地执行以及工业噪声消除。
 * **第四阶段：** 支持双臂协同动作生成以及自主决策审计。
 
----
+## 🌍 语言
+
+本 README 和仓库文档提供八种语言：英语、西班牙语、德语、法语、意大利语、日语、中文和葡萄牙语（葡萄牙）。它们同时编写，并由 CI 检查八个文件拥有相同的章节和相同的链接。 本仓库没有自己的界面或消息目录，因此没有需要翻译的界面文字。
 
 ## 🔗 相关项目
 
@@ -304,20 +340,26 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
 - **[HYDRA-UMC-OPS-AGENT](https://github.com/JuanenRac/HYDRA-UMC-OPS-AGENT)** — 维护事件协调器：一个低权限的边缘角色采集经过脱敏的库存/健康快照，一个控制面角色以只读方式渲染它，并请求某个 AI 提供方给出诊断建议——从不应用补丁，也从不部署任何内容。
 - **[HYDRA-UMC-DEV-SERVER](https://github.com/JuanenRac/HYDRA-UMC-DEV-SERVER)** — 可复现的开发主机（Raspberry Pi 5 / CM5），保存整个生态系统的源代码，并在持久队列下运行有界的构建/测试任务；这是专用的开发角色，明确区别于运行中的 CM5。
 
----
+## 📚 文档
 
-## 📚 文档与社区
+更多阅读：
 
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** —— 提交 Pull Request 所需的技术栈和编码规范。
-- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** —— 本社区所期望的行为准则。
-- **[SECURITY.md](SECURITY.md)** —— 如何报告漏洞，以及本项目真实的安全关注重点。
-- **[SUPPORT.md](SUPPORT.md)** —— 在哪里提问和报告缺陷。
-- **[LICENSE.md](LICENSE.md)** —— 本项目自身的许可证。
+* [生态系统的安全基线](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md)
+* [生态系统的威胁模型](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md)
+* [本仓库的更新日志](CHANGELOG.md)
+* [本仓库的许可证](LICENSE.md)
+
+## 🤝 参与贡献与社区
+
+* 提交 pull request 之前，请运行 `HYDRA_UMC_CI=1 py -3 tools/ci_validate.py`（或 `HYDRA_UMC_CI=1 python3 tools/ci_validate.py`）：它必须输出 `CI_VALIDATION=PASS`。此检查不要运行 `build.sh` 或 `build.bat`；构建不是检查。
+* 八个 README 由 HYDRA-UMC-DOCS 中的同一个源生成；请勿手工编辑。修改源文件，再用 `tools/make_readmes.py` 重新生成。
+* 不要在 README 中声称尚未运行过的内容：属实时请写“仅模拟”或“尚未在硬件上试过”。
+* 请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)、[行为准则](CODE_OF_CONDUCT.md)、[SECURITY.md](SECURITY.md) 和 [SUPPORT.md](SUPPORT.md)。
 
 ## 👤 作者
-**JuanenRac** (Electro Hobby 3D)
-📧 electrohobby3d@gmail.com
-📺 [youtube.com/@electrohobby3d](https://youtube.com/@electrohobby3d)
+
+**JuanenRac (Electro Hobby 3D)** · electrohobby3d@gmail.com
 
 ## 📜 许可证
-GPL-3.0 —— 详见 LICENSE。
+
+GPL-3.0-or-later - [LICENSE](LICENSE).

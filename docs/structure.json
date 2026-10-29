@@ -1,0 +1,619 @@
+{
+  "repo": "HYDRA-UMC-VLA-ENGINE",
+  "ecosystem": "hydra",
+  "svg": "en",
+  "exempt": [
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    "LICENSE",
+    "LICENSE.md",
+    "build-test.bat",
+    "test.bat"
+  ],
+  "cards": [
+    {
+      "name": "src/hydra_umc_vla_engine/",
+      "span": 3,
+      "accent": "a",
+      "rows": [
+        {
+          "name": "__init__.py",
+          "desc": {
+            "en": "Package description and version",
+            "es": "Descripción y versión del paquete",
+            "de": "Paketbeschreibung und Version",
+            "fr": "Description et version du paquet",
+            "it": "Descrizione e versione del pacchetto",
+            "ja": "パッケージの説明とバージョン",
+            "zh": "包说明与版本",
+            "pt": "Descrição e versão do pacote"
+          },
+          "tree_desc": {
+            "en": "Package description and version",
+            "es": "Descripción y versión del paquete",
+            "de": "Paketbeschreibung und Version",
+            "fr": "Description et version du paquet",
+            "it": "Descrizione e versione del pacchetto",
+            "ja": "パッケージの説明とバージョン",
+            "zh": "包说明与版本",
+            "pt": "Descrição e versão do pacote"
+          }
+        },
+        {
+          "name": "access.py",
+          "desc": {
+            "en": "Optional Bearer token for the HTTP API",
+            "es": "Token Bearer opcional para la API HTTP",
+            "de": "Optionales Bearer-Token für die HTTP-API",
+            "fr": "Jeton Bearer facultatif pour l'API HTTP",
+            "it": "Token Bearer facoltativo per l'API HTTP",
+            "ja": "HTTP API 用の任意の Bearer",
+            "zh": "HTTP API 的可选 Bearer 令牌",
+            "pt": "Token Bearer opcional para a API HTTP"
+          },
+          "tree_desc": {
+            "en": "Optional Bearer token for the HTTP API (none needed on loopback, mandatory away from it)",
+            "es": "Token Bearer opcional para la API HTTP (no hace falta en loopback, obligatorio fuera de él)",
+            "de": "Optionales Bearer-Token für die HTTP-API (auf Loopback nicht nötig, sonst Pflicht)",
+            "fr": "Jeton Bearer facultatif pour l'API HTTP (inutile en boucle locale, obligatoire en dehors)",
+            "it": "Token Bearer facoltativo per l'API HTTP (non serve su loopback, obbligatorio fuori da esso)",
+            "ja": "HTTP API 用の任意の Bearer トークン (ループバックでは不要、それ以外では必須)",
+            "zh": "HTTP API 的可选 Bearer 令牌 (本机回环无需,非回环时必须)",
+            "pt": "Token Bearer opcional para a API HTTP (dispensável em loopback, obrigatório fora dele)"
+          }
+        },
+        {
+          "name": "action_tokens.py",
+          "desc": {
+            "en": "Action <-> token discretization",
+            "es": "Discretizacion accion <-> token",
+            "de": "Aktion <-> Token Diskretisierung",
+            "fr": "Discrétisation action <-> jeton",
+            "it": "Discretizzazione azione <-> token",
+            "ja": "アクション <-> トークン離散化",
+            "zh": "动作 <-> 令牌离散化（OpenVLA/R",
+            "pt": "Discretização ação <-> token"
+          },
+          "tree_desc": {
+            "en": "Action <-> token discretization (OpenVLA/RT-2-style)",
+            "es": "Discretizacion accion <-> token (estilo OpenVLA/RT-2)",
+            "de": "Aktion <-> Token Diskretisierung (OpenVLA/RT-2-Stil)",
+            "fr": "Discrétisation action <-> jeton (style OpenVLA/RT-2)",
+            "it": "Discretizzazione azione <-> token (stile OpenVLA/RT-2)",
+            "ja": "アクション <-> トークン離散化（OpenVLA/RT-2 スタイル）",
+            "zh": "动作 <-> 令牌离散化（OpenVLA/RT-2 风格）",
+            "pt": "Discretização ação <-> token (ao estilo OpenVLA/RT-2)"
+          }
+        },
+        {
+          "name": "trajectory.py",
+          "desc": {
+            "en": "Action-sequence -> pose-trajectory",
+            "es": "Integracion de secuencia de acciones ->",
+            "de": "Aktionssequenz -> Posen-Trajektorie",
+            "fr": "Intégration séquence d'actions ->",
+            "it": "Integrazione sequenza di azioni ->",
+            "ja": "アクションシーケンス -> 姿勢軌道の積分",
+            "zh": "动作序列 -> 位姿轨迹积分",
+            "pt": "Integração sequência de ações -> trajetória"
+          },
+          "tree_desc": {
+            "en": "Action-sequence -> pose-trajectory integration",
+            "es": "Integracion de secuencia de acciones -> trayectoria de poses",
+            "de": "Aktionssequenz -> Posen-Trajektorie Integration",
+            "fr": "Intégration séquence d'actions -> trajectoire de poses",
+            "it": "Integrazione sequenza di azioni -> traiettoria di pose",
+            "ja": "アクションシーケンス -> 姿勢軌道の積分",
+            "zh": "动作序列 -> 位姿轨迹积分",
+            "pt": "Integração sequência de ações -> trajetória de poses"
+          }
+        },
+        {
+          "name": "guard.py",
+          "desc": {
+            "en": "Trajectory guard",
+            "es": "Guarda de trayectoria",
+            "de": "Trajektorien-Wächter",
+            "fr": "Garde de trajectoire",
+            "it": "Guardia di traiettoria",
+            "ja": "軌道ガード:作業空間、ステップ制限、ゾーン",
+            "zh": "轨迹守卫：工作空间、步长限制、区域",
+            "pt": "Guarda de trajetória"
+          },
+          "tree_desc": {
+            "en": "Trajectory guard: work volume, step limits, zones",
+            "es": "Guarda de trayectoria: volumen de trabajo, límites de paso, zonas",
+            "de": "Trajektorien-Wächter: Arbeitsvolumen, Schrittgrenzen, Zonen",
+            "fr": "Garde de trajectoire : volume de travail, limites de pas, zones",
+            "it": "Guardia di traiettoria: volume di lavoro, limiti di passo, zone",
+            "ja": "軌道ガード:作業空間、ステップ制限、ゾーン",
+            "zh": "轨迹守卫：工作空间、步长限制、区域",
+            "pt": "Guarda de trajetória: volume de trabalho, limites de passo, zonas"
+          }
+        },
+        {
+          "name": "model_manifest.py",
+          "desc": {
+            "en": "Real model shape contract +",
+            "es": "Contrato real de forma de modelo +",
+            "de": "Echter Modellformvertrag +",
+            "fr": "Contrat réel de forme du modèle +",
+            "it": "Contratto reale di forma del modello +",
+            "ja": "実際のモデル形状契約 + 推論出力検証",
+            "zh": "真实的模型形状契约 + 推理输出验证",
+            "pt": "Contrato real de forma do modelo +"
+          },
+          "tree_desc": {
+            "en": "Real model shape contract + inference-output validation",
+            "es": "Contrato real de forma de modelo + validación de salida de inferencia",
+            "de": "Echter Modellformvertrag + Inferenzausgabe-Validierung",
+            "fr": "Contrat réel de forme du modèle + validation de sortie d'inférence",
+            "it": "Contratto reale di forma del modello + validazione output di inferenza",
+            "ja": "実際のモデル形状契約 + 推論出力検証",
+            "zh": "真实的模型形状契约 + 推理输出验证",
+            "pt": "Contrato real de forma do modelo + validação da saída de inferência"
+          }
+        },
+        {
+          "name": "hardware.py",
+          "desc": {
+            "en": "Real accelerator/model-weight availability",
+            "es": "Sondas reales de disponibilidad de",
+            "de": "Echte",
+            "fr": "Sondes réelles de disponibilité",
+            "it": "Sonde reali di disponibilità",
+            "ja": "実際のアクセラレータ/モデルの重みの可用性プ",
+            "zh": "真实的加速器/模型权重可用性探测",
+            "pt": "Sondas reais de disponibilidade do"
+          },
+          "tree_desc": {
+            "en": "Real accelerator/model-weight availability probes",
+            "es": "Sondas reales de disponibilidad de acelerador/pesos de modelo",
+            "de": "Echte Beschleuniger-/Modellgewicht-Verfügbarkeitsprüfungen",
+            "fr": "Sondes réelles de disponibilité accélérateur/poids de modèle",
+            "it": "Sonde reali di disponibilità acceleratore/pesi del modello",
+            "ja": "実際のアクセラレータ/モデルの重みの可用性プローブ",
+            "zh": "真实的加速器/模型权重可用性探测",
+            "pt": "Sondas reais de disponibilidade do acelerador/pesos do modelo"
+          }
+        },
+        {
+          "name": "hailo_runtime.py",
+          "desc": {
+            "en": "Real HailoRT (hailo_platform) integration",
+            "es": "Limite real de integracion HailoRT",
+            "de": "Echte HailoRT-Integrationsgrenze",
+            "fr": "Véritable limite d'intégration HailoRT",
+            "it": "Vero limite di integrazione HailoRT",
+            "ja": "実際のHailoRT(hailo_platf",
+            "zh": "真实的 HailoRT（hailo_plat",
+            "pt": "Fronteira real de integração com o HailoRT"
+          },
+          "tree_desc": {
+            "en": "Real HailoRT (hailo_platform) integration boundary, lazily imported",
+            "es": "Limite real de integracion HailoRT (hailo_platform), importada de forma perezosa",
+            "de": "Echte HailoRT-Integrationsgrenze (hailo_platform), lazy importiert",
+            "fr": "Véritable limite d'intégration HailoRT (hailo_platform), importée paresseusement",
+            "it": "Vero limite di integrazione HailoRT (hailo_platform), importato in modo lazy",
+            "ja": "実際のHailoRT(hailo_platform)統合境界、遅延インポート",
+            "zh": "真实的 HailoRT（hailo_platform）集成边界，延迟导入",
+            "pt": "Fronteira real de integração com o HailoRT (hailo_platform), importada só quando é preciso"
+          }
+        },
+        {
+          "name": "api.py",
+          "desc": {
+            "en": "Plain JSON/HTTP surface",
+            "es": "Superficie JSON/HTTP plana",
+            "de": "Einfache JSON/HTTP-Oberfläche",
+            "fr": "Surface JSON/HTTP simple",
+            "it": "Superficie JSON/HTTP semplice",
+            "ja": "シンプルなJSON/HTTPサーフェス(st",
+            "zh": "简洁的 JSON/HTTP 接口(基于 st",
+            "pt": "Superfície JSON/HTTP simples"
+          },
+          "tree_desc": {
+            "en": "Plain JSON/HTTP surface (stdlib http.server) over tokens/trajectory/status",
+            "es": "Superficie JSON/HTTP plana (http.server de stdlib) sobre tokens/trayectoria/estado",
+            "de": "Einfache JSON/HTTP-Oberfläche (stdlib http.server) über tokens/trajectory/status",
+            "fr": "Surface JSON/HTTP simple (http.server de stdlib) sur tokens/trajectoire/statut",
+            "it": "Superficie JSON/HTTP semplice (http.server di stdlib) su tokens/traiettoria/stato",
+            "ja": "シンプルなJSON/HTTPサーフェス(stdlibのhttp.server)。tokens/trajectory/statusを橋渡し",
+            "zh": "简洁的 JSON/HTTP 接口(基于 stdlib http.server),桥接 tokens/trajectory/status",
+            "pt": "Superfície JSON/HTTP simples (stdlib http.server) sobre tokens/trajetória/estado"
+          }
+        },
+        {
+          "name": "main.py",
+          "desc": {
+            "en": "CLI entry point",
+            "es": "Entry point CLI",
+            "de": "CLI-Einstiegspunkt",
+            "fr": "Point d'entrée CLI",
+            "it": "Entry point CLI",
+            "ja": "CLI エントリポイント（素の呼び出し +",
+            "zh": "CLI 入口点（裸调用 + `tokens`",
+            "pt": "Ponto de entrada da CLI"
+          },
+          "tree_desc": {
+            "en": "CLI entry point (bare invocation + `tokens`/`trajectory`/`status`)",
+            "es": "Entry point CLI (invocacion desnuda + `tokens`/`trajectory`/`status`)",
+            "de": "CLI-Einstiegspunkt (nackter Aufruf + `tokens`/`trajectory`/`status`)",
+            "fr": "Point d'entrée CLI (invocation nue + `tokens`/`trajectory`/`status`)",
+            "it": "Entry point CLI (invocazione nuda + `tokens`/`trajectory`/`status`)",
+            "ja": "CLI エントリポイント（素の呼び出し + `tokens`/`trajectory`/`status`）",
+            "zh": "CLI 入口点（裸调用 + `tokens`/`trajectory`/`status`）",
+            "pt": "Ponto de entrada da CLI (invocação simples + `tokens`/`trajectory`/`status`)"
+          }
+        }
+      ],
+      "tree_head": {
+        "en": "Source code",
+        "es": "Código fuente",
+        "de": "Quellcode",
+        "fr": "Code source",
+        "it": "Codice sorgente",
+        "ja": "ソースコード",
+        "zh": "源代码",
+        "pt": "Código-fonte"
+      },
+      "sub": {
+        "en": "Source code",
+        "es": "Código fuente",
+        "de": "Quellcode",
+        "fr": "Code source",
+        "it": "Codice sorgente",
+        "ja": "ソースコード",
+        "zh": "源代码",
+        "pt": "Código-fonte"
+      },
+      "columns": 2
+    },
+    {
+      "name": {
+        "en": "folders",
+        "es": "carpetas",
+        "de": "Ordner",
+        "fr": "dossiers",
+        "it": "cartelle",
+        "ja": "フォルダ",
+        "zh": "文件夹",
+        "pt": "pastas"
+      },
+      "kind": "group",
+      "span": 3,
+      "accent": "b",
+      "columns": 2,
+      "rows": [
+        {
+          "name": "tests/",
+          "desc": {
+            "en": "Real pytest suite",
+            "es": "Suite pytest real",
+            "de": "Echte pytest-Suite",
+            "fr": "Suite pytest réelle",
+            "it": "Suite pytest reale",
+            "ja": "実際の pytest スイート",
+            "zh": "真实 pytest 套件（action_to",
+            "pt": "Suite pytest real"
+          },
+          "tree_desc": {
+            "en": "Real pytest suite (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)",
+            "es": "Suite pytest real (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)",
+            "de": "Echte pytest-Suite (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)",
+            "fr": "Suite pytest réelle (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)",
+            "it": "Suite pytest reale (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)",
+            "ja": "実際の pytest スイート（action_tokens、trajectory、manifest、hardware、hailo_runtime、api、CLI）",
+            "zh": "真实 pytest 套件（action_tokens、trajectory、manifest、hardware、hailo_runtime、api、CLI）",
+            "pt": "Suite pytest real (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)"
+          }
+        },
+        {
+          "name": "docs/",
+          "desc": {
+            "en": "Documentation and benchmarks",
+            "es": "Documentación y benchmarks",
+            "de": "Dokumentation und Benchmarks",
+            "fr": "Documentation et benchmarks",
+            "it": "Documentazione e benchmark",
+            "ja": "ドキュメントとベンチマーク",
+            "zh": "文档与基准测试",
+            "pt": "Documentação e benchmarks"
+          },
+          "tree_desc": {
+            "en": "Documentation and benchmarks",
+            "es": "Documentación y benchmarks",
+            "de": "Dokumentation und Benchmarks",
+            "fr": "Documentation et benchmarks",
+            "it": "Documentazione e benchmark",
+            "ja": "ドキュメントとベンチマーク",
+            "zh": "文档与基准测试",
+            "pt": "Documentação e benchmarks"
+          }
+        },
+        {
+          "name": "images/",
+          "desc": {
+            "en": "Media and diagrams",
+            "es": "Medios y diagramas",
+            "de": "Medien und Diagramme",
+            "fr": "Médias et diagrammes",
+            "it": "Media e diagrammi",
+            "ja": "メディアと図表",
+            "zh": "媒体与图表",
+            "pt": "Multimédia e diagramas"
+          },
+          "tree_desc": {
+            "en": "Media and diagrams",
+            "es": "Medios y diagramas",
+            "de": "Medien und Diagramme",
+            "fr": "Médias et diagrammes",
+            "it": "Media e diagrammi",
+            "ja": "メディアと図表",
+            "zh": "媒体与图表",
+            "pt": "Multimédia e diagramas"
+          }
+        },
+        {
+          "name": "systemd/",
+          "desc": {
+            "en": "service unit",
+            "es": "unidad de servicio",
+            "de": "Dienst-Unit",
+            "fr": "unité de service",
+            "it": "unità di servizio",
+            "ja": "サービスユニット",
+            "zh": "服务单元",
+            "pt": "unidade de serviço"
+          },
+          "tree_desc": {
+            "en": "service unit",
+            "es": "unidad de servicio",
+            "de": "Dienst-Unit",
+            "fr": "unité de service",
+            "it": "unità di servizio",
+            "ja": "サービスユニット",
+            "zh": "服务单元",
+            "pt": "unidade de serviço"
+          }
+        },
+        {
+          "name": "tools/",
+          "desc": {
+            "en": "project tools and CI checks",
+            "es": "herramientas del proyecto y comprobaciones",
+            "de": "Projektwerkzeuge und CI-Prüfungen",
+            "fr": "outils du projet et vérifications de la CI",
+            "it": "strumenti del progetto e controlli della CI",
+            "ja": "プロジェクトのツールと CI の検査",
+            "zh": "项目工具和 CI 检查",
+            "pt": "ferramentas do projeto e verificações da CI"
+          },
+          "tree_desc": {
+            "en": "project tools and CI checks",
+            "es": "herramientas del proyecto y comprobaciones del CI",
+            "de": "Projektwerkzeuge und CI-Prüfungen",
+            "fr": "outils du projet et vérifications de la CI",
+            "it": "strumenti del progetto e controlli della CI",
+            "ja": "プロジェクトのツールと CI の検査",
+            "zh": "项目工具和 CI 检查",
+            "pt": "ferramentas do projeto e verificações da CI"
+          }
+        },
+        {
+          "name": ".github/",
+          "desc": {
+            "en": "CI workflow and issue templates",
+            "es": "flujo de CI y plantillas de incidencias",
+            "de": "CI-Workflow und Issue-Vorlagen",
+            "fr": "workflow de CI et modèles de tickets",
+            "it": "workflow di CI e modelli di segnalazione",
+            "ja": "CI ワークフローと Issue テンプレート",
+            "zh": "CI 工作流和 Issue 模板",
+            "pt": "fluxo de CI e modelos de problemas"
+          }
+        }
+      ]
+    },
+    {
+      "name": {
+        "en": "project files",
+        "es": "ficheros del proyecto",
+        "de": "Projektdateien",
+        "fr": "fichiers du projet",
+        "it": "file del progetto",
+        "ja": "プロジェクトのファイル",
+        "zh": "项目文件",
+        "pt": "ficheiros do projeto"
+      },
+      "kind": "group",
+      "span": 3,
+      "accent": "c",
+      "columns": 2,
+      "rows": [
+        {
+          "name": "pyproject.toml",
+          "desc": {
+            "en": "package metadata",
+            "es": "Metadatos del paquete",
+            "de": "Paketmetadaten",
+            "fr": "Métadonnées du paquet",
+            "it": "Metadati del pacchetto",
+            "ja": "パッケージのメタデータ",
+            "zh": "包的元数据",
+            "pt": "metadados do pacote"
+          },
+          "tree_desc": {
+            "en": "package metadata",
+            "es": "Metadatos del paquete (versión con incremento cuentakilómetros)",
+            "de": "Paketmetadaten",
+            "fr": "Métadonnées du paquet (version à incrément compteur kilométrique)",
+            "it": "Metadati del pacchetto (versione a incremento contachilometri)",
+            "ja": "パッケージのメタデータ",
+            "zh": "包的元数据",
+            "pt": "metadados do pacote"
+          }
+        },
+        {
+          "name": "bump_version.py",
+          "desc": {
+            "en": "explicit version bump",
+            "es": "Incremento de versión tipo cuentakilómetros",
+            "de": "ausdrückliche Versionserhöhung",
+            "fr": "Incrément de version type compteur",
+            "it": "Incremento di versione stile contachilometri",
+            "ja": "明示的なバージョン更新",
+            "zh": "显式提升版本",
+            "pt": "Subida de versão ao estilo conta-quilómetros"
+          },
+          "tree_desc": {
+            "en": "explicit version bump",
+            "es": "Incremento de versión tipo cuentakilómetros (solo lo ejecuta el comando `bump` explícito)",
+            "de": "ausdrückliche Versionserhöhung",
+            "fr": "Incrément de version type compteur kilométrique (exécuté seulement par la commande `bump` explicite)",
+            "it": "Incremento di versione stile contachilometri (eseguito solo dal comando `bump` esplicito)",
+            "ja": "明示的なバージョン更新",
+            "zh": "显式提升版本",
+            "pt": "Subida de versão ao estilo conta-quilómetros (executada só pelo comando `bump` explícito)"
+          }
+        },
+        {
+          "name": "bump_manifest_version.py",
+          "desc": {
+            "en": "Syncs hydra-umc.project.json's version",
+            "es": "Sincroniza la versión de",
+            "de": "Synchronisiert die Version von",
+            "fr": "Synchronise la version de",
+            "it": "Sincronizza la versione di",
+            "ja": "hydra-umc.project.json",
+            "zh": "将 hydra-umc.project.js",
+            "pt": "Sincroniza a versão de"
+          },
+          "tree_desc": {
+            "en": "Syncs hydra-umc.project.json's version to the native one (--sync)",
+            "es": "Sincroniza la versión de hydra-umc.project.json con la nativa (--sync)",
+            "de": "Synchronisiert die Version von hydra-umc.project.json mit der nativen (--sync)",
+            "fr": "Synchronise la version de hydra-umc.project.json avec la version native (--sync)",
+            "it": "Sincronizza la versione di hydra-umc.project.json con quella nativa (--sync)",
+            "ja": "hydra-umc.project.json のバージョンをネイティブ版と同期(--sync)",
+            "zh": "将 hydra-umc.project.json 的版本与原生版本同步(--sync)",
+            "pt": "Sincroniza a versão de hydra-umc.project.json com a nativa (--sync)"
+          }
+        },
+        {
+          "name": "build.sh / build.bat",
+          "desc": {
+            "en": "Create venv, install",
+            "es": "Crea el venv, instala",
+            "de": "Erstellt das venv, installiert",
+            "fr": "Crée le venv, installe",
+            "it": "Crea il venv, installa",
+            "ja": "venv 作成、インストール",
+            "zh": "创建 venv、安装（含 dev 附加项）",
+            "pt": "Cria o venv, instala"
+          },
+          "tree_desc": {
+            "en": "Create venv, install (with dev extras), verify import, run tests",
+            "es": "Crea el venv, instala (con extras dev), verifica la importación, ejecuta tests",
+            "de": "Erstellt das venv, installiert (mit dev-Extras), prüft den Import, führt Tests aus",
+            "fr": "Crée le venv, installe (avec extras dev), vérifie l'import, exécute les tests",
+            "it": "Crea il venv, installa (con extra dev), verifica l'import, esegue i test",
+            "ja": "venv 作成、インストール（dev エクストラ付き）、インポート検証、テスト実行",
+            "zh": "创建 venv、安装（含 dev 附加项）、验证导入、运行测试",
+            "pt": "Cria o venv, instala (com extras de desenvolvimento), verifica a importação, executa os testes"
+          }
+        },
+        {
+          "name": "run.sh / run.bat",
+          "desc": {
+            "en": "Run the entry point",
+            "es": "Ejecuta el punto de entrada",
+            "de": "Führt den Einstiegspunkt aus",
+            "fr": "Exécute le point d'entrée",
+            "it": "Esegue il punto di ingresso",
+            "ja": "エントリポイントを実行",
+            "zh": "运行入口点",
+            "pt": "Executa o ponto de entrada"
+          },
+          "tree_desc": {
+            "en": "Run the entry point",
+            "es": "Ejecuta el punto de entrada",
+            "de": "Führt den Einstiegspunkt aus",
+            "fr": "Exécute le point d'entrée",
+            "it": "Esegue il punto di ingresso",
+            "ja": "エントリポイントを実行",
+            "zh": "运行入口点",
+            "pt": "Executa o ponto de entrada"
+          }
+        },
+        {
+          "name": "CHANGELOG.md",
+          "desc": {
+            "en": "what changed in each version",
+            "es": "qué cambió en cada versión",
+            "de": "was sich in jeder Version geändert hat",
+            "fr": "ce qui a changé à chaque version",
+            "it": "cosa è cambiato in ogni versione",
+            "ja": "各バージョンの変更点",
+            "zh": "每个版本的变更",
+            "pt": "o que mudou em cada versão"
+          }
+        },
+        {
+          "name": "Dockerfile",
+          "desc": {
+            "en": "container image",
+            "es": "imagen de contenedor",
+            "de": "Container-Image",
+            "fr": "image de conteneur",
+            "it": "immagine del container",
+            "ja": "コンテナイメージ",
+            "zh": "容器镜像",
+            "pt": "imagem de contentor"
+          }
+        },
+        {
+          "name": "build-test.sh",
+          "desc": {
+            "en": "non-mutating build check",
+            "es": "comprobación de compilación sin cambios",
+            "de": "Build-Prüfung ohne Änderungen",
+            "fr": "vérification de build sans modification",
+            "it": "controllo di build senza modifiche",
+            "ja": "変更を伴わないビルド確認",
+            "zh": "不修改内容的构建检查",
+            "pt": "verificação de compilação sem alterações"
+          }
+        },
+        {
+          "name": "hydra-umc.project.json",
+          "desc": {
+            "en": "manifest: version, maturity, family",
+            "es": "manifiesto: versión, madurez, familia",
+            "de": "Manifest: Version, Reifegrad, Familie",
+            "fr": "manifeste : version, maturité, famille",
+            "it": "manifesto: versione, maturità, famiglia",
+            "ja": "マニフェスト：バージョン、成熟度、ファミリー",
+            "zh": "清单：版本、成熟度、系列",
+            "pt": "manifesto: versão, maturidade, família"
+          }
+        },
+        {
+          "name": "test.sh",
+          "desc": {
+            "en": "runs the tests",
+            "es": "ejecuta las pruebas",
+            "de": "führt die Tests aus",
+            "fr": "lance les tests",
+            "it": "esegue i test",
+            "ja": "テストを実行",
+            "zh": "运行测试",
+            "pt": "executa os testes"
+          }
+        }
+      ]
+    }
+  ]
+}

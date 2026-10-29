@@ -1,26 +1,33 @@
+<!-- =============================================================================
+HYDRA-UMC-VLA-ENGINE - Vision-language-action engine contracts
+Copyright (C) JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
+GPL-3.0-or-later - see LICENSE
+============================================================================= -->
+
 <p align="center">
   <img src="images/HYDRA_UMC_BANNER.svg" alt="HYDRA-UMC-VLA-ENGINE banner" width="100%">
 </p>
 
-# 👁️ HYDRA-UMC-VLA-ENGINE
+# 🤖 HYDRA-UMC-VLA-ENGINE
 
 <p align="center">🇺🇸 <b>English</b> | <a href="README_spa.md">🇪🇸 Español</a> | <a href="README_fra.md">🇫🇷 Français</a> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 简体中文</a> | <a href="README_jpn.md">🇯🇵 日本語</a> | <a href="README_por.md">🇵🇹 Português</a></p>
 
 ### 🤖 Multimodal Vision-Language-Action Framework for Robotics
 
 <p align="center">
-  <img src="https://img.shields.io/badge/License-GPL%203.0-blue.svg" alt="GPL 3.0">
-  <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="VLA">
-  <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Hailo-10">
+  <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
+  <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
+  <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
+  <img src="https://img.shields.io/badge/Tests-138%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
-
-**Honesty check - what actually runs today:** the action-token encode/decode discretization (`action_tokens.py`), trajectory integration with real angle wraparound (`trajectory.py`), the model-manifest shape/confidence contract (`model_manifest.py`), the honest hardware-state `status` check (`hardware.py`), the JSON/HTTP surface (`api.py`), and the HailoRT integration boundary (`hailo_runtime.py`) are real and tested - 106 passing tests (`pytest tests/`). None of that needs a VLA model or a Hailo-10 NPU to run or test - `tokens encode`/`tokens decode`/`trajectory integrate`/`status` all work today against synthetic data, and `status` deliberately reports `no_accelerator`/`no_model_weights`/`hardware_ready_no_inference` rather than a fake "ready". The new `Dockerfile` reuses the same CLI flags already verified live on the real CM5 systemd unit, but has not itself been build-tested - there's no Docker runtime on this development machine. Actual VLA model inference, semantic control, and zero-shot generalization are still pure aspiration: no model has been chosen yet, and this environment has no physical Hailo-10 module to run one on. See `CHANGELOG.md` for exactly what has shipped so far, and section 1's own feature list below for the per-feature real/future breakdown.
-
-**Known limits:** a trajectory is a proposal: `POST /trajectory/integrate` (and the CLI) reject any delta outside the action space (0.05 m, 0.1 rad per step, gripper within 0 to 1) and more than 1000 steps, instead of integrating them. The decoded "no movement" token is exactly 0.0 on the symmetric axes (an even vocabulary has no bin centred on zero, which used to add a small drift each step). Rotation deltas are still added to Euler angles, which is only a good approximation for small angles away from a pitch of 90 degrees; there is no inference, so nothing in the family consumes this output yet beyond the generic proxy in the server. The service keeps `/dev` visible under systemd (`DevicePolicy=closed` with `/dev/hailo0` allowed), reads its workspace from `HYDRA_UMC_WORKSPACE` in the container, only accepts a `?workspace=` inside its own workspace, and counts a model only when a non-empty `.hef` file is there.
 
 ---
 
 > **Safety and security status:** this ecosystem is not a certified safety system. There is no hardware E-STOP path, no firmware-enforced limits or interlocks and no verified motion command yet; firmware images are checked with CRC32 and a shared-key HMAC-SHA256, not with an asymmetric signature; TLS and mutual TLS are optional and off by default; no custom board has been populated or tested yet. Read the [security baseline](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md) and the [threat model](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md) before relying on any statement here for the safety of a person.
+
+---
 
 ## 📋 At a glance
 
@@ -28,10 +35,12 @@
 |---|---|
 | Version | `0.1.8` |
 | Maturity | Functional |
-| Tests | 98 (`pytest tests/`) |
+| Tests | 138 (`python -m pytest -q tests`) |
 | Stack | Python / Vision-Language-Action model |
 | Target | The Raspberry Pi CM5 of a HYDRA-UMC cell |
 | On real hardware | Not yet: no run on real hardware is recorded for this version |
+
+**Jump to:** [Overview](#-overview) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Testing](#-testing) · [Repository Structure](#-repository-structure) · [Related Projects](#-related-projects)
 
 ## 🚦 Project status
 
@@ -42,11 +51,11 @@ Each line is one part of this repository and the light says how far it is today.
 | Area | State | What it means here |
 |---|---|---|
 | Software | 🟡 | Works for its main purpose; the honesty check above lists what is still missing |
-| Tests | 🟢 | 98 automated tests, run on every change |
+| Tests | 🟢 | 138 automated tests, run on every change |
 | Real hardware | 🔴 | Not yet: no run on real hardware is recorded for this version |
 | Documentation | 🟢 | README in eight languages, checked against the manifest on every change |
 
-## 1. 🛠️ TECHNICAL OVERVIEW
+## 🎯 Overview
 
 **HYDRA-UMC-VLA-ENGINE** is meant to be the multimodal bridge that translates visual context and natural language into direct robotic actions. It is intended to run quantized versions of state-of-the-art VLA models (like OpenVLA or specialized RT-2 variants) locally on the Hailo-10 NPU (planned: no model is chosen and no Hailo-10 inference exists yet).
 
@@ -68,11 +77,19 @@ The goal is to let the robot understand commands such as "pick the blue componen
   under [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE)
   (alongside Voice-UI, Semantic-Planner and Docs-QA), sharing its parent's
   HydraOS image and model weights instead of keeping its own copies.
-* 📦 **Odometer Versioning:** The version in `pyproject.toml` is raised only by the explicit bump command (`python tools/hydra_project_tool.py bump`, which runs `bump_version.py`) - building never changes it.
 
----
+## 🧩 Role in HYDRA-UMC
 
-## 2. 🔄 VLA INFERENCE FLOW
+**HYDRA-UMC-VLA-ENGINE** holds the parts of a vision-language-action engine that do not need a model: turning actions into discrete tokens and back, integrating the predicted steps into a trajectory, and a guard that clamps or rejects a trajectory against the work volume, speed limits, safety zones and the gripper range. No model runs yet; the Hailo-10 boundary only reports what is present.
+
+## 🏛️ Architecture
+
+<p align="center">
+  <img src="images/architecture.svg" alt="HYDRA-UMC-VLA-ENGINE architecture" width="100%">
+</p>
+
+<details>
+<summary>Text version of the diagram (Mermaid)</summary>
 
 ```mermaid
 flowchart LR
@@ -83,9 +100,9 @@ flowchart LR
     TRAJ --> MOTOR["Motor Commands"]
 ```
 
----
+</details>
 
-## 3. 🧱 ARCHITECTURE & DESIGN DECISIONS
+### ARCHITECTURE & DESIGN DECISIONS
 
 This repository is a **child** of the Cognitive AI Node family - its
 parent, [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE),
@@ -140,52 +157,25 @@ service into `docker-compose.yml` alongside its three siblings
   level up, the same real directory that repo's own
   `check_shared_models()` already checks.
 
----
+## 🚀 Quick start
 
-## 📂 DIRECTORY STRUCTURE
+Requires Python 3.10 or newer.
 
-```text
-HYDRA-UMC-VLA-ENGINE/
-├── src/hydra_umc_vla_engine/   # Source code
-│   ├── __init__.py                 # Package description and version
-│   ├── access.py                   # Optional Bearer token for the HTTP API (none needed on loopback, mandatory away from it)
-│   ├── action_tokens.py        # Action <-> token discretization (OpenVLA/RT-2-style)
-│   ├── trajectory.py           # Action-sequence -> pose-trajectory integration
-│   ├── guard.py                # Trajectory guard: work volume, step limits, zones
-│   ├── model_manifest.py       # Real model shape contract + inference-output validation
-│   ├── hardware.py             # Real accelerator/model-weight availability probes
-│   ├── hailo_runtime.py        # Real HailoRT (hailo_platform) integration boundary, lazily imported
-│   ├── api.py                  # Plain JSON/HTTP surface (stdlib http.server) over tokens/trajectory/status
-│   └── main.py                 # CLI entry point (bare invocation + `tokens`/`trajectory`/`status`)
-├── tests/                      # Real pytest suite (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)
-├── docs/                       # Documentation and benchmarks
-├── images/                     # Media and diagrams
-├── systemd/
-│   └── hydra-umc-vla-engine.service  # Local CM5 action-tokenization/trajectory API systemd unit
-├── tools/
-│   ├── build_test.py                 # Non-versioning build/compile check
-│   ├── ci_validate.py                # Manifest/CHANGELOG/docs validation used by CI
-│   ├── _doc_policy.py                # Documentation rules shared by the family (a copy of HYDRA-UMC-SDK's, kept in sync)
-│   ├── _readme_parity.py             # Check that the eight READMEs share one structure (a copy of HYDRA-UMC-SDK's, kept in sync)
-│   └── hydra_project_tool.py         # The same commands in every repository: validate, test, ci, version, status, bump
-├── build/                      # Local build output (git-ignored)
-├── pyproject.toml              # Package metadata (odometer-bumped version)
-├── bump_version.py             # Odometer-style version bump (run only by the explicit `bump` command)
-├── bump_manifest_version.py    # Syncs hydra-umc.project.json's version to the native one (--sync)
-├── build.sh / build.bat        # Create venv, install (with dev extras), verify import, run tests
-└── run.sh / run.bat            # Run the entry point
+```bash
+./build.sh  # Linux, macOS (build.bat on Windows)
+./run.sh tokens encode --action 0.02,0.00,-0.01,0.0,0.0,0.05,1.0
+./run.sh trajectory integrate --start 0,0,0,0,0,0 --actions actions.json
+./run.sh status
+./run.sh serve --port 8098
 ```
 
-> **Note:** `hardware/` and `firmware/` were pruned - this node runs on an
-> existing CM5 + Hailo-10 M.2 module with no hardware/firmware design of
-> its own. `os/` and `models/` were also pruned - the HydraOS image and
-> the shared Hailo-10 model weights live in the parent
-> `HYDRA-UMC-COGNITIVE-NODE`, which this project attaches to as a
-> service (see its `docker-compose.yml`).
+## 🧪 Testing
 
----
+138 automated tests run with `python -m pytest -q tests`. They need no hardware and nothing outside this machine.
 
-## ⚙️ BUILD & RUN GUIDE
+The CI runs `HYDRA_UMC_CI=1 python tools/ci_validate.py`, which checks the manifest, the documents, the eight READMEs and the pictures.
+
+## 🏗️ Build & Release
 
 Requires Python >= 3.10.
 
@@ -255,23 +245,68 @@ mode: no_accelerator - no Hailo-10 NPU device node on this machine - real infere
   hydra_umc_vla_engine"` itself failed - re-run with the venv active to
   see the real traceback.
 
----
+## 📂 Repository Structure
 
-## ✅ Current Status & Next Steps
+<p align="center">
+  <img src="images/repository-structure.svg" alt="Repository structure of HYDRA-UMC-VLA-ENGINE" width="100%">
+</p>
 
-**Real today:** action-token encoding/decoding and trajectory generation (`action_tokens.py`, `trajectory.py`) - the "Action Tokens" and "Trajectory Generator" steps in the flow diagram above - plus a real HailoRT integration boundary (`hailo_runtime.py`) ready for a real `.hef` model and a Hailo-10 module the moment they exist. 106 tests and a real CLI.
+<details>
+<summary>Text version of the tree</summary>
+
+```text
+HYDRA-UMC-VLA-ENGINE/
+├── src/hydra_umc_vla_engine/   Source code
+│   ├── __init__.py             Package description and version
+│   ├── access.py               Optional Bearer token for the HTTP API (none needed on loopback, mandatory away from it)
+│   ├── action_tokens.py        Action <-> token discretization (OpenVLA/RT-2-style)
+│   ├── trajectory.py           Action-sequence -> pose-trajectory integration
+│   ├── guard.py                Trajectory guard: work volume, step limits, zones
+│   ├── model_manifest.py       Real model shape contract + inference-output validation
+│   ├── hardware.py             Real accelerator/model-weight availability probes
+│   ├── hailo_runtime.py        Real HailoRT (hailo_platform) integration boundary, lazily imported
+│   ├── api.py                  Plain JSON/HTTP surface (stdlib http.server) over tokens/trajectory/status
+│   └── main.py                 CLI entry point (bare invocation + `tokens`/`trajectory`/`status`)
+├── tests/                      Real pytest suite (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)
+├── docs/                       Documentation and benchmarks
+├── images/                     Media and diagrams
+├── systemd/                    service unit
+├── tools/                      project tools and CI checks
+├── .github/                    CI workflow and issue templates
+├── pyproject.toml              package metadata
+├── bump_version.py             explicit version bump
+├── bump_manifest_version.py    Syncs hydra-umc.project.json's version to the native one (--sync)
+├── build.sh / build.bat        Create venv, install (with dev extras), verify import, run tests
+├── run.sh / run.bat            Run the entry point
+├── CHANGELOG.md                what changed in each version
+├── Dockerfile                  container image
+├── build-test.sh               non-mutating build check
+├── hydra-umc.project.json      manifest: version, maturity, family
+└── test.sh                     runs the tests
+```
+
+</details>
+
+## 🗺️ Roadmap & Known limits
+
+**Known limits today**
+
+### Current Status & Next Steps
+
+**Real today:** action-token encoding/decoding and trajectory generation (`action_tokens.py`, `trajectory.py`) - the "Action Tokens" and "Trajectory Generator" steps in the flow diagram above - plus a real HailoRT integration boundary (`hailo_runtime.py`) ready for a real `.hef` model and a Hailo-10 module the moment they exist. 138 tests and a real CLI.
 
 **Still ahead, and blocked on real hardware/a real model:** actually running inference needs a real compiled `.hef` VLA model (OpenVLA/RT-2 quantized for Hailo-10 - no specific model chosen yet) and a physical Hailo-10 module attached, both real, unavoidable blockers `hailo_runtime.py` cannot remove on its own - but loading and decoding one, once it exists, is no longer unwritten code.
 
----
+### ROADMAP
 
-## 🚀 ROADMAP
 * **Phase 1:** VLA engine deployment and multi-modal input processing on Hailo-10.
 * **Phase 2:** Semantic planner integration with swarm behavioral models and long-term memory.
 * **Phase 3:** Voice UI low-latency local execution and industrial noise cancellation.
 * **Phase 4:** Support for dual-arm coordinated action generation and autonomous decision-making audits.
 
----
+## 🌍 Languages
+
+This README and the documents of the repository exist in eight languages: English, Spanish, German, French, Italian, Japanese, Chinese and Portuguese (Portugal). They are written together and checked in the CI so that the eight files have the same sections and the same links. This repository has no screen or message catalogue of its own, so there are no interface strings to translate.
 
 ## 🔗 Related Projects
 
@@ -362,20 +397,26 @@ This project is part of the HYDRA-UMC robotics ecosystem by the same author (Jua
 - **[HYDRA-UMC-OPS-AGENT](https://github.com/JuanenRac/HYDRA-UMC-OPS-AGENT)** — maintenance-incident coordinator: a low-privilege edge role collects a sanitized inventory/health snapshot, a control-plane role renders it read-only and asks an AI provider to suggest a diagnosis - never applies a patch or deploys anything.
 - **[HYDRA-UMC-DEV-SERVER](https://github.com/JuanenRac/HYDRA-UMC-DEV-SERVER)** — reproducible development host (Raspberry Pi 5 / CM5) that stores the ecosystem's source and runs bounded build/test tasks under a durable queue; a dedicated dev role, explicitly not an operational CM5.
 
----
+## 📚 Documentation
 
-## 📚 Documentation & Community
+Where to read more:
 
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** — tech stack and coding guidelines for a pull request.
-- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** — the standards of behavior expected in this community.
-- **[SECURITY.md](SECURITY.md)** — how to report a vulnerability, and this project's own real security focus areas.
-- **[SUPPORT.md](SUPPORT.md)** — where to ask questions and report bugs.
-- **[LICENSE.md](LICENSE.md)** — this project's own license.
+* [Security baseline of the ecosystem](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md)
+* [Threat model of the ecosystem](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md)
+* [Changelog of this repository](CHANGELOG.md)
+* [License of this repository](LICENSE.md)
+
+## 🤝 Contributing & Community
+
+* Before a pull request run `HYDRA_UMC_CI=1 py -3 tools/ci_validate.py` (or `HYDRA_UMC_CI=1 python3 tools/ci_validate.py`): it must print `CI_VALIDATION=PASS`. Do not run `build.sh` or `build.bat` for this check; building is not a check.
+* The eight READMEs are written from one source in HYDRA-UMC-DOCS; do not edit them by hand. Change the source and write them again with `tools/make_readmes.py`.
+* Do not state in a README what has not run: say "simulated" or "not tried on hardware" where that is the truth.
+* See [CONTRIBUTING.md](CONTRIBUTING.md), the [code of conduct](CODE_OF_CONDUCT.md), [SECURITY.md](SECURITY.md) and [SUPPORT.md](SUPPORT.md).
 
 ## 👤 AUTHOR
-**JuanenRac** (Electro Hobby 3D)
-📧 electrohobby3d@gmail.com
-📺 [youtube.com/@electrohobby3d](https://youtube.com/@electrohobby3d)
+
+**JuanenRac (Electro Hobby 3D)** · electrohobby3d@gmail.com
 
 ## 📜 LICENSE
-GPL-3.0 - See LICENSE for details.
+
+GPL-3.0-or-later - [LICENSE](LICENSE).
