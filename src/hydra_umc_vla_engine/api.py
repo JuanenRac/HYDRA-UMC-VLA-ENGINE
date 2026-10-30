@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -93,7 +94,13 @@ def _query_params(handler: BaseHTTPRequestHandler) -> dict[str, str]:
     return {key: value[0] for key, value in values.items() if value}
 
 
-def proposal_record(poses: list[dict], signer: tuple[bytes, str, int] | None = None) -> dict:
+def proposal_record(
+    poses: list[dict],
+    signer: tuple[bytes, str, int] | None = None,
+    *,
+    model_version: str = "",
+    instruction_sha256: str = "",
+) -> dict:
     """Marks a trajectory as a proposal, never an order.
 
     The engine only integrates predicted actions into poses; nothing here
@@ -110,7 +117,12 @@ def proposal_record(poses: list[dict], signer: tuple[bytes, str, int] | None = N
     if signer is not None:
         # signer = (key, robot_id, validity_ms): the proposal also names its robot and time window, signed (proposal_signing.py)
         key, robot_id, validity_ms = signer
-        record.update(sign_proposal(key, record["fingerprint"], robot_id, validity_ms=validity_ms))
+        record.update(
+            sign_proposal(
+                key, record["fingerprint"], robot_id, validity_ms=validity_ms,
+                model_version=model_version, instruction_sha256=instruction_sha256,
+            )
+        )
     return record
 
 
@@ -230,6 +242,11 @@ class Handler(BaseHTTPRequestHandler):
                 raise TrajectoryError("actions: expected a JSON array")
             actions = [tuple(a) for a in actions_raw]
             poses = integrate_trajectory(start, actions)
+            instruction_sha256 = body.get("instruction_sha256", "")
+            if not isinstance(instruction_sha256, str) or (
+                instruction_sha256 and not re.fullmatch(r"[0-9a-f]{64}", instruction_sha256)
+            ):
+                raise ValueError("instruction_sha256 must be 64 lowercase hex characters (the SHA-256 of the instruction)")
         except KeyError as e:
             _write_error(self, 400, f"missing required field: {e}")
             return
@@ -251,7 +268,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             guard_info = {"outcome": "not_configured", "reasons": [], "rejected_at_step": None}
         pose_dicts = [asdict(p) for p in poses]
-        _write_json(self, 200, {"poses": pose_dicts, "guard": guard_info, "proposal": proposal_record(pose_dicts, self.server.proposal_signer)})
+        _write_json(self, 200, {"poses": pose_dicts, "guard": guard_info, "proposal": proposal_record(pose_dicts, self.server.proposal_signer, model_version=self.server.model_version, instruction_sha256=instruction_sha256)})
 
 
 class VlaEngineServer(ThreadingHTTPServer):
@@ -263,8 +280,11 @@ class VlaEngineServer(ThreadingHTTPServer):
         guard: GuardLimits | None = None,
         require_guard: bool = False,
         proposal_signer: tuple[bytes, str, int] | None = None,
+        model_version: str = "",
     ) -> None:
         super().__init__(address, Handler)
+        # the model that produces the actions, signed into every proposal when given
+        self.model_version = model_version
         # (key, robot_id, validity_ms): with it every proposal is signed for that robot and a short time window
         self.proposal_signer = proposal_signer
         # the limits of the cell every trajectory is checked against (guard.py); with require_guard no trajectory is offered without them

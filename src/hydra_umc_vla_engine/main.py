@@ -163,7 +163,7 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         except (ProposalKeyError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
-    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer)
+    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer, model_version=args.model_version.strip())
     if guard is None:
         print("[vla-engine] no trajectory guard: trajectories are offered with guard=not_configured (give --guard-file to check them against the limits of the cell)")
     else:
@@ -229,6 +229,8 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--proposal-key-file", default=None, dest="proposal_key_file",
                        help="file with the key that signs every trajectory proposal for --robot-id and a short time window (off by default: the proposal only carries its fingerprint)")
     serve.add_argument("--robot-id", default="", dest="robot_id", help="the robot the signed proposals are for (needed with --proposal-key-file)")
+    serve.add_argument("--model-version", default="", dest="model_version",
+                       help="the version of the model that produces the actions; with --proposal-key-file it is signed into every proposal")
     serve.add_argument("--proposal-valid-seconds", type=float, default=60.0, dest="proposal_valid_seconds",
                        help="how long a signed proposal stays valid, at most 600 (default 60)")
     serve.add_argument("--token-file", default=None, help="file with the bearer token every request must present (or the HYDRA_UMC_VLA_ENGINE_TOKEN environment variable). Needed to bind an address that is not loopback.")

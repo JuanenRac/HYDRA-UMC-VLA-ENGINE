@@ -197,6 +197,8 @@ $ echo $?
 
 `POST /trajectory/integrate` answers with a `proposal` that is never an order (`authorized` is `false`) and carries the `fingerprint` of the poses. `serve --proposal-key-file FILE --robot-id ROBOT [--proposal-valid-seconds N]` (off by default; the key file lives in the installation, never in the repository, and holds at least 16 bytes) also puts `robot_id`, `issued_at_ms`, `expires_at_ms` and a `signature` in it: an HMAC-SHA256 over the fingerprint, the robot and the time window (60 seconds by default, 600 at most). The layer that executes checks it with `verify_proposal()`: a proposal that is altered, expired, issued in the future or meant for another robot is refused, so a trajectory approved once cannot be replayed later or on another robot. The key proves the proposal comes from a holder of the installation's key; it does not tell one holder from another.
 
+`serve --model-version V` and an `instruction_sha256` (64 hex characters, the SHA-256 of the instruction) in the body of `POST /trajectory/integrate` add `model_version` and `instruction_sha256` to the proposal and to what is signed; `verify_proposal(..., expected_model_version=..., expected_instruction_sha256=...)` then also refuses a proposal of another model or for another instruction.
+
 ## Exit codes
 
 | Code | Meaning |

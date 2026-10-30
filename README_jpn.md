@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-150%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-155%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | バージョン | `0.1.8` |
 | 成熟度 | 機能する |
-| テスト | 150 (`python -m pytest -q tests`) |
+| テスト | 155 (`python -m pytest -q tests`) |
 | 技術 | Python / Vision-Language-Action model |
 | 対象 | HYDRA-UMC セルの Raspberry Pi CM5 |
 | 実機での確認 | まだです：このバージョンについて実機での動作記録はありません |
@@ -51,7 +51,7 @@ GPL-3.0-or-later - see LICENSE
 | 領域 | 状態 | ここでの意味 |
 |---|---|---|
 | ソフトウェア | 🟡 | 主な目的では動作します。足りない点は上の正直さの確認に書かれています |
-| テスト | 🟢 | 自動テスト 150 件。変更のたびに実行されます |
+| テスト | 🟢 | 自動テスト 155 件。変更のたびに実行されます |
 | 実機 | 🔴 | まだです：このバージョンについて実機での動作記録はありません |
 | ドキュメント | 🟢 | 8 言語の README。変更のたびにマニフェストと照合されます |
 
@@ -116,7 +116,7 @@ flowchart LR
 
 ## 🔒 セキュリティと安全
 
-軌道の提案には署名を付けられます（既定ではオフ）。`serve --proposal-key-file FILE --robot-id ROBOT [--proposal-valid-seconds N]` を指定すると、`POST /trajectory/integrate` が返す内容に `robot_id`、`issued_at_ms`、`expires_at_ms`、HMAC-SHA256 の `signature` が加わります（有効時間は既定 60 秒、最長 600 秒）。`verify_proposal()` は、改変された、期限切れの、未来の日時の、または別のロボット向けの提案を拒否します。提案は依然として命令ではありません。鍵（16 バイト以上）はインストール先のファイルに置き、リポジトリには決して置きません。
+軌道の提案には署名を付けられます（既定ではオフ）。`serve --proposal-key-file FILE --robot-id ROBOT [--proposal-valid-seconds N]` を指定すると、`POST /trajectory/integrate` が返す内容に `robot_id`、`issued_at_ms`、`expires_at_ms`、HMAC-SHA256 の `signature` が加わります（有効時間は既定 60 秒、最長 600 秒）。`verify_proposal()` は、改変された、期限切れの、未来の日時の、または別のロボット向けの提案を拒否します。提案は依然として命令ではありません。鍵（16 バイト以上）はインストール先のファイルに置き、リポジトリには決して置きません。 リクエストに `--model-version V` と `instruction_sha256`（指示の SHA-256）を与えると、この二つも署名され、`verify_proposal()` で必須にできます。承認を別のモデルの提案や別の指示の提案へ移し替えることはできません。
 
 ## 🚀 クイックスタート
 
@@ -132,7 +132,7 @@ Python 3.10 以上が必要です。
 
 ## 🧪 テスト
 
-`python -m pytest -q tests` で自動テスト 150 件を実行します。 ハードウェアも、このマシンの外にあるものも必要ありません。
+`python -m pytest -q tests` で自動テスト 155 件を実行します。 ハードウェアも、このマシンの外にあるものも必要ありません。
 
 CI は `HYDRA_UMC_CI=1 python tools/ci_validate.py` を実行し、マニフェスト、文書、8 つの README、図を検査します。
 

@@ -130,3 +130,62 @@ def test_serve_needs_a_robot_and_a_readable_key_with_the_switch(tmp_path: Path, 
     ):
         monkeypatch.setattr(sys, "argv", ["hydra-umc-vla-engine", *argv])
         assert main_module.main() == 2
+
+
+def _bound(**kwargs) -> dict:
+    fingerprint = "f" * 64
+    record = {"fingerprint": fingerprint}
+    record.update(sign_proposal(KEY, fingerprint, "robot-1", validity_ms=30_000, now_ms=NOW, **kwargs))
+    return record
+
+
+def test_the_model_and_the_instruction_are_part_of_what_is_signed() -> None:
+    record = _bound(model_version="vla-1.2", instruction_sha256="a" * 64)
+    assert verify_proposal(KEY, record, expected_robot_id="robot-1", now_ms=NOW + 1) == (True, "")
+    assert verify_proposal(KEY, record, expected_robot_id="robot-1", now_ms=NOW + 1, expected_model_version="vla-1.2", expected_instruction_sha256="a" * 64)[0]
+    ok, why = verify_proposal(KEY, record, expected_robot_id="robot-1", now_ms=NOW + 1, expected_model_version="vla-9")
+    assert not ok and "model" in why
+    ok, why = verify_proposal(KEY, record, expected_robot_id="robot-1", now_ms=NOW + 1, expected_instruction_sha256="b" * 64)
+    assert not ok and "instruction" in why
+
+
+@pytest.mark.parametrize("field, value", [("model_version", "vla-9"), ("instruction_sha256", "b" * 64)])
+def test_changing_a_bound_field_breaks_the_signature(field: str, value: str) -> None:
+    record = _bound(model_version="vla-1.2", instruction_sha256="a" * 64)
+    record[field] = value
+    assert verify_proposal(KEY, record, expected_robot_id="robot-1", now_ms=NOW + 1)[0] is False
+
+
+def test_removing_a_bound_field_breaks_the_signature() -> None:
+    record = _bound(model_version="vla-1.2")
+    del record["model_version"]
+    assert verify_proposal(KEY, record, expected_robot_id="robot-1", now_ms=NOW + 1)[0] is False
+
+
+def test_the_integrate_route_signs_the_model_and_the_instruction(tmp_path: Path) -> None:
+    server = VlaEngineServer(("127.0.0.1", 0), tmp_path, proposal_signer=(KEY, "robot-1", 30_000), model_version="vla-1.2")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        url = f"http://127.0.0.1:{server.server_address[1]}/trajectory/integrate"
+
+        def call(body: dict):
+            req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"}, method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=5) as r:
+                    return r.status, json.loads(r.read())
+            except urllib.error.HTTPError as e:
+                return e.code, json.loads(e.read())
+
+        base = {"start": [0, 0, 0, 0, 0, 0], "actions": [[0.01, 0, 0, 0, 0, 0, 0]]}
+        status, answer = call({**base, "instruction_sha256": "c" * 64})
+        assert status == 200, answer
+        proposal = answer["proposal"]
+        assert proposal["model_version"] == "vla-1.2" and proposal["instruction_sha256"] == "c" * 64
+        assert verify_proposal(KEY, proposal, expected_robot_id="robot-1", expected_instruction_sha256="c" * 64)[0]
+        assert call({**base, "instruction_sha256": "nothex"})[0] == 400
+        assert call({**base, "instruction_sha256": 5})[0] == 400
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
