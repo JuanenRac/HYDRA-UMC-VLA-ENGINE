@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
   <img src="https://img.shields.io/badge/Tests-155%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.1.9-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -33,7 +33,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Version | `0.1.8` |
+| Version | `0.1.9` |
 | Reifegrad | Funktionsfähig |
 | Tests | 155 (`python -m pytest -q tests`) |
 | Technik | Python / Vision-Language-Action model |
@@ -161,7 +161,7 @@ neben seinen drei Geschwistern (Voice-UI, Semantic-Planner, Docs-QA) ein:
 
 ## 🔒 Sicherheit und Schutz
 
-Trajektorienvorschläge können signiert werden (standardmäßig aus): `serve --proposal-key-file DATEI --robot-id ROBOT [--proposal-valid-seconds N]` fügt dem, was `POST /trajectory/integrate` liefert, `robot_id`, `issued_at_ms`, `expires_at_ms` und eine HMAC-SHA256-`signature` hinzu (standardmäßig 60 Sekunden gültig, höchstens 600), und `verify_proposal()` lehnt einen veränderten, abgelaufenen, in der Zukunft datierten oder für einen anderen Roboter gedachten Vorschlag ab. Ein Vorschlag ist weiterhin nie ein Befehl. Der Schlüssel (mindestens 16 Bytes) liegt in einer Datei der Installation, nie im Repository. Mit `--model-version V` und einem `instruction_sha256` (SHA-256 der Anweisung) in der Anfrage werden beide ebenfalls signiert, und `verify_proposal()` kann sie verlangen; so lässt sich eine Freigabe nicht auf einen Vorschlag eines anderen Modells oder für eine andere Anweisung übertragen.
+Trajektorienvorschläge können signiert werden (standardmäßig aus): `serve --proposal-key-file DATEI --robot-id ROBOT [--proposal-valid-seconds N]` fügt dem, was `POST /trajectory/integrate` liefert, `robot_id`, `issued_at_ms`, `expires_at_ms` und eine HMAC-SHA256-`signature` hinzu (standardmäßig 60 Sekunden gültig, höchstens 600), und `verify_proposal()` lehnt einen veränderten, abgelaufenen, in der Zukunft datierten oder für einen anderen Roboter gedachten Vorschlag ab. Ein Vorschlag ist weiterhin nie ein Befehl. Der Schlüssel (mindestens 16 Bytes) liegt in einer Datei der Installation, nie im Repository.
 
 ## 🚀 Schnellstart
 
@@ -200,7 +200,7 @@ run.bat
 (nackter Aufruf):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.8
+HYDRA-UMC-VLA-ENGINE v0.1.9
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

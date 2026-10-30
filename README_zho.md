@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
   <img src="https://img.shields.io/badge/Tests-155%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.1.9-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -33,7 +33,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| 版本 | `0.1.8` |
+| 版本 | `0.1.9` |
 | 成熟度 | 可用 |
 | 测试 | 155 (`python -m pytest -q tests`) |
 | 技术栈 | Python / Vision-Language-Action model |
@@ -116,7 +116,7 @@ flowchart LR
 
 ## 🔒 安全与防护
 
-轨迹提案可以签名（默认关闭）：`serve --proposal-key-file 文件 --robot-id ROBOT [--proposal-valid-seconds N]` 会在 `POST /trajectory/integrate` 返回的内容中加入 `robot_id`、`issued_at_ms`、`expires_at_ms` 和 HMAC-SHA256 `signature`（默认有效 60 秒，最长 600 秒），`verify_proposal()` 会拒绝被篡改、已过期、日期在未来或属于其他机器人的提案。提案仍然不是命令。密钥（至少 16 字节）放在安装目录中的文件里，绝不放进仓库。 若给出 `--model-version V`，并在请求中带上 `instruction_sha256`（指令的 SHA-256），二者也会被签名，`verify_proposal()` 可以要求它们；因此批准不能被挪到另一个模型的提案或另一条指令上。
+轨迹提案可以签名（默认关闭）：`serve --proposal-key-file 文件 --robot-id ROBOT [--proposal-valid-seconds N]` 会在 `POST /trajectory/integrate` 返回的内容中加入 `robot_id`、`issued_at_ms`、`expires_at_ms` 和 HMAC-SHA256 `signature`（默认有效 60 秒，最长 600 秒），`verify_proposal()` 会拒绝被篡改、已过期、日期在未来或属于其他机器人的提案。提案仍然不是命令。密钥（至少 16 字节）放在安装目录中的文件里，绝不放进仓库。
 
 ## 🚀 快速开始
 
@@ -154,7 +154,7 @@ run.bat
 `build.sh`/`build.bat` 不会更改版本号（只有 `python tools/hydra_project_tool.py bump` 才会提升）。`run.sh`（裸调用）的预期输出：
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.8
+HYDRA-UMC-VLA-ENGINE v0.1.9
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.1.9] - Trajectory proposals signed with an expiry, a robot, the model and the instruction, and the universal README
+
 - **A signed proposal can also bind the model and the instruction:** `serve --model-version V` and an `instruction_sha256` in the request of `POST /trajectory/integrate` are signed into the proposal (the signed message is now `v2`), and `verify_proposal()` can require them. 5 new tests (155 in all).
 
 - **Trajectory proposals can be signed, with an expiry and a robot:** `serve --proposal-key-file FILE --robot-id ROBOT` (off by default) adds `robot_id`, `issued_at_ms`, `expires_at_ms` and an HMAC-SHA256 `signature` over the fingerprint, the robot and the time window to the proposal that `POST /trajectory/integrate` returns (60 seconds by default, 600 at most). `verify_proposal()` refuses an altered, expired, future-dated or other-robot proposal. A proposal is still never an order. Without the switch the answer is unchanged.

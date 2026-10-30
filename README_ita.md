@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
   <img src="https://img.shields.io/badge/Tests-155%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.1.9-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -33,7 +33,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Versione | `0.1.8` |
+| Versione | `0.1.9` |
 | Maturità | Funzionale |
 | Test | 155 (`python -m pytest -q tests`) |
 | Tecnologia | Python / Vision-Language-Action model |
@@ -162,7 +162,7 @@ fratelli (Voice-UI, Semantic-Planner, Docs-QA):
 
 ## 🔒 Sicurezza e protezione
 
-Le proposte di traiettoria possono essere firmate (spento per impostazione predefinita): `serve --proposal-key-file FILE --robot-id ROBOT [--proposal-valid-seconds N]` aggiunge `robot_id`, `issued_at_ms`, `expires_at_ms` e una `signature` HMAC-SHA256 a ciò che restituisce `POST /trajectory/integrate` (valida 60 secondi per impostazione predefinita, 600 al massimo), e `verify_proposal()` rifiuta una proposta alterata, scaduta, con data futura o di un altro robot. Una proposta non è comunque mai un ordine. La chiave (almeno 16 byte) sta in un file dell'installazione, mai nel repository. Con `--model-version V` e un `instruction_sha256` (SHA-256 dell'istruzione) nella richiesta, entrambi vengono firmati e `verify_proposal()` può richiederli: un'approvazione non può essere spostata su una proposta di un altro modello o per un'altra istruzione.
+Le proposte di traiettoria possono essere firmate (spento per impostazione predefinita): `serve --proposal-key-file FILE --robot-id ROBOT [--proposal-valid-seconds N]` aggiunge `robot_id`, `issued_at_ms`, `expires_at_ms` e una `signature` HMAC-SHA256 a ciò che restituisce `POST /trajectory/integrate` (valida 60 secondi per impostazione predefinita, 600 al massimo), e `verify_proposal()` rifiuta una proposta alterata, scaduta, con data futura o di un altro robot. Una proposta non è comunque mai un ordine. La chiave (almeno 16 byte) sta in un file dell'installazione, mai nel repository.
 
 ## 🚀 Avvio rapido
 
@@ -201,7 +201,7 @@ run.bat
 `run.sh` (invocazione nuda):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.8
+HYDRA-UMC-VLA-ENGINE v0.1.9
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

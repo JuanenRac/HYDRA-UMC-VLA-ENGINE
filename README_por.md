@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
   <img src="https://img.shields.io/badge/Tests-155%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.1.9-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -33,7 +33,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Versão | `0.1.8` |
+| Versão | `0.1.9` |
 | Maturidade | Funcional |
 | Testes | 155 (`python -m pytest -q tests`) |
 | Tecnologia | Python / Vision-Language-Action model |
@@ -114,7 +114,7 @@ Este repositório é um **filho** da família Cognitive AI Node - o seu pai, o [
 
 ## 🔒 Segurança e proteção
 
-As propostas de trajetória podem ser assinadas (desligado por predefinição): `serve --proposal-key-file FICHEIRO --robot-id ROBOT [--proposal-valid-seconds N]` acrescenta `robot_id`, `issued_at_ms`, `expires_at_ms` e uma `signature` HMAC-SHA256 ao que `POST /trajectory/integrate` devolve (válida 60 segundos por predefinição, 600 no máximo), e `verify_proposal()` recusa uma proposta alterada, expirada, com data futura ou de outro robô. Uma proposta continua a nunca ser uma ordem. A chave (pelo menos 16 bytes) fica num ficheiro da instalação, nunca no repositório. Com `--model-version V` e um `instruction_sha256` (SHA-256 da instrução) no pedido, ambos são também assinados e `verify_proposal()` pode exigi-los: uma aprovação não pode ser passada para uma proposta de outro modelo ou para outra instrução.
+As propostas de trajetória podem ser assinadas (desligado por predefinição): `serve --proposal-key-file FICHEIRO --robot-id ROBOT [--proposal-valid-seconds N]` acrescenta `robot_id`, `issued_at_ms`, `expires_at_ms` e uma `signature` HMAC-SHA256 ao que `POST /trajectory/integrate` devolve (válida 60 segundos por predefinição, 600 no máximo), e `verify_proposal()` recusa uma proposta alterada, expirada, com data futura ou de outro robô. Uma proposta continua a nunca ser uma ordem. A chave (pelo menos 16 bytes) fica num ficheiro da instalação, nunca no repositório.
 
 ## 🚀 Início rápido
 
@@ -152,7 +152,7 @@ run.bat
 `build.sh`/`build.bat` nunca alteram a versão (só `python tools/hydra_project_tool.py bump` a sobe). Saída esperada de `run.sh` (invocação simples):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.8
+HYDRA-UMC-VLA-ENGINE v0.1.9
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
   <img src="https://img.shields.io/badge/Tests-155%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.1.9-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -33,7 +33,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Versión | `0.1.8` |
+| Versión | `0.1.9` |
 | Madurez | Funcional |
 | Tests | 155 (`python -m pytest -q tests`) |
 | Tecnología | Python / Vision-Language-Action model |
@@ -160,7 +160,7 @@ hermanos (Voice-UI, Semantic-Planner, Docs-QA):
 
 ## 🔒 Seguridad y protección
 
-Las propuestas de trayectoria pueden firmarse (apagado por defecto): `serve --proposal-key-file FICHERO --robot-id ROBOT [--proposal-valid-seconds N]` añade `robot_id`, `issued_at_ms`, `expires_at_ms` y una `signature` HMAC-SHA256 a lo que devuelve `POST /trajectory/integrate` (válida 60 segundos por defecto, 600 como máximo), y `verify_proposal()` rechaza una propuesta alterada, caducada, con fecha futura o de otro robot. Una propuesta sigue sin ser nunca una orden. La clave (al menos 16 bytes) vive en un fichero de la instalación, nunca en el repositorio. Con `--model-version V` y un `instruction_sha256` (SHA-256 de la instrucción) en la petición, ambos también se firman y `verify_proposal()` puede exigirlos: una aprobación no se puede pasar a una propuesta de otro modelo o de otra instrucción.
+Las propuestas de trayectoria pueden firmarse (apagado por defecto): `serve --proposal-key-file FICHERO --robot-id ROBOT [--proposal-valid-seconds N]` añade `robot_id`, `issued_at_ms`, `expires_at_ms` y una `signature` HMAC-SHA256 a lo que devuelve `POST /trajectory/integrate` (válida 60 segundos por defecto, 600 como máximo), y `verify_proposal()` rechaza una propuesta alterada, caducada, con fecha futura o de otro robot. Una propuesta sigue sin ser nunca una orden. La clave (al menos 16 bytes) vive en un fichero de la instalación, nunca en el repositorio.
 
 ## 🚀 Inicio rápido
 
@@ -199,7 +199,7 @@ run.bat
 (invocación desnuda):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.8
+HYDRA-UMC-VLA-ENGINE v0.1.9
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

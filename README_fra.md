@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
   <img src="https://img.shields.io/badge/Tests-155%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.1.9-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -33,7 +33,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Version | `0.1.8` |
+| Version | `0.1.9` |
 | Maturité | Fonctionnel |
 | Tests | 155 (`python -m pytest -q tests`) |
 | Technologie | Python / Vision-Language-Action model |
@@ -163,7 +163,7 @@ frères (Voice-UI, Semantic-Planner, Docs-QA) :
 
 ## 🔒 Sécurité et protection
 
-Les propositions de trajectoire peuvent être signées (désactivé par défaut) : `serve --proposal-key-file FICHIER --robot-id ROBOT [--proposal-valid-seconds N]` ajoute `robot_id`, `issued_at_ms`, `expires_at_ms` et une `signature` HMAC-SHA256 à ce que renvoie `POST /trajectory/integrate` (valable 60 secondes par défaut, 600 au plus), et `verify_proposal()` refuse une proposition altérée, expirée, datée du futur ou destinée à un autre robot. Une proposition n'est toujours jamais un ordre. La clé (au moins 16 octets) se trouve dans un fichier de l'installation, jamais dans le dépôt. Avec `--model-version V` et un `instruction_sha256` (SHA-256 de l'instruction) dans la requête, les deux sont aussi signés et `verify_proposal()` peut les exiger : une approbation ne peut pas être déplacée vers une proposition d'un autre modèle ou pour une autre instruction.
+Les propositions de trajectoire peuvent être signées (désactivé par défaut) : `serve --proposal-key-file FICHIER --robot-id ROBOT [--proposal-valid-seconds N]` ajoute `robot_id`, `issued_at_ms`, `expires_at_ms` et une `signature` HMAC-SHA256 à ce que renvoie `POST /trajectory/integrate` (valable 60 secondes par défaut, 600 au plus), et `verify_proposal()` refuse une proposition altérée, expirée, datée du futur ou destinée à un autre robot. Une proposition n'est toujours jamais un ordre. La clé (au moins 16 octets) se trouve dans un fichier de l'installation, jamais dans le dépôt.
 
 ## 🚀 Démarrage rapide
 
@@ -202,7 +202,7 @@ run.bat
 attendue de `run.sh` (invocation nue) :
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.8
+HYDRA-UMC-VLA-ENGINE v0.1.9
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 

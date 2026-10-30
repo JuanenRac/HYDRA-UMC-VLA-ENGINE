@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
   <img src="https://img.shields.io/badge/Tests-155%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.1.9-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -33,7 +33,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Version | `0.1.8` |
+| Version | `0.1.9` |
 | Maturity | Functional |
 | Tests | 155 (`python -m pytest -q tests`) |
 | Stack | Python / Vision-Language-Action model |
@@ -159,7 +159,7 @@ service into `docker-compose.yml` alongside its three siblings
 
 ## 🔒 Security & Safety
 
-Trajectory proposals can be signed (off by default): `serve --proposal-key-file FILE --robot-id ROBOT [--proposal-valid-seconds N]` adds `robot_id`, `issued_at_ms`, `expires_at_ms` and an HMAC-SHA256 `signature` to what `POST /trajectory/integrate` returns (valid 60 seconds by default, 600 at most), and `verify_proposal()` refuses an altered, expired, future-dated or other-robot proposal. A proposal is still never an order. The key (at least 16 bytes) lives in a file of the installation, never in the repository. With `--model-version V` and an `instruction_sha256` (the SHA-256 of the instruction) in the request, both are signed too, and `verify_proposal()` can require them, so an approval cannot be moved to a proposal made by another model or for another instruction.
+Trajectory proposals can be signed (off by default): `serve --proposal-key-file FILE --robot-id ROBOT [--proposal-valid-seconds N]` adds `robot_id`, `issued_at_ms`, `expires_at_ms` and an HMAC-SHA256 `signature` to what `POST /trajectory/integrate` returns (valid 60 seconds by default, 600 at most), and `verify_proposal()` refuses an altered, expired, future-dated or other-robot proposal. A proposal is still never an order. The key (at least 16 bytes) lives in a file of the installation, never in the repository.
 
 ## 🚀 Quick start
 
@@ -198,7 +198,7 @@ run.bat
 (bare invocation):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.1.8
+HYDRA-UMC-VLA-ENGINE v0.1.9
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 
