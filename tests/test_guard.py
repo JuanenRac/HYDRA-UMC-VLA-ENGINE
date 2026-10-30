@@ -29,6 +29,7 @@ from hydra_umc_vla_engine.guard import (
     load_limits,
     parse_limits,
 )
+from hydra_umc_vla_engine.action_tokens import ActionSpec
 from hydra_umc_vla_engine.trajectory import Pose, integrate_trajectory
 
 CELL = {
@@ -301,3 +302,17 @@ def test_serve_refuses_to_start_with_an_unusable_guard_or_require_guard_without_
 def test_a_zone_is_a_box_with_a_level() -> None:
     zone = GuardZone("z", "danger", Box((0, 0, 0), (1, 1, 1)))
     assert zone.level == "danger" and zone.box.contains((0.5, 0.5, 0.5))
+
+
+def test_a_real_turn_is_cut_back_as_a_rotation_about_the_same_axis() -> None:
+    from hydra_umc_vla_engine.rotation import Quaternion
+
+    start = Pose(-0.3, 0.0, 0.3, 0.0, math.radians(80), 0.0, 0.0)
+    wide = tuple(ActionSpec(name, -4.0, 4.0) for name in ("dx", "dy", "dz", "droll", "dpitch", "dyaw")) + (ActionSpec("gripper", 0.0, 1.0),)
+    poses = integrate_trajectory(start, [(0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0)], wide)
+    result = guard_trajectory(poses, limits(max_angular_step_rad=0.1))
+    assert result.outcome == CLAMPED
+    # a turn of 0.5 rad about the base z, cut to 0.1 rad: the same axis, a fifth of the angle
+    assert start.quaternion.angle_to(result.poses[1].quaternion) == pytest.approx(0.1, abs=1e-9)
+    expected = Quaternion.from_rotation_vector((0.0, 0.0, 0.1)) * start.quaternion
+    assert result.poses[1].quaternion.angle_to(expected) < 1e-9

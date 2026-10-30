@@ -13,10 +13,12 @@ from running the model or the Hailo-10 NPU that would produce the deltas.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
 
 from .action_tokens import ActionSpec, VLA_ACTION_SPACE
+from .rotation import Quaternion
+from .rotation_policy import RotationPolicy, active_policy
 
 
 class TrajectoryError(ValueError):
@@ -32,6 +34,26 @@ class Pose:
     pitch: float
     yaw: float
     gripper: float
+    # The orientation as a unit quaternion, when the pose comes from a rotation that was composed; roll, pitch and
+    # yaw are then derived from it. Without one it is made from the angles.
+    orientation: Quaternion | None = field(default=None, compare=False, repr=False)
+
+    @property
+    def quaternion(self) -> Quaternion:
+        if self.orientation is not None:
+            return self.orientation
+        return Quaternion.from_euler(self.roll, self.pitch, self.yaw)
+
+
+def compose_rotation(current: Quaternion, delta: tuple[float, float, float], policy: RotationPolicy) -> Quaternion:
+    """The orientation after turning by `delta` (a rotation vector in radians) in the declared frame."""
+    turn = Quaternion.from_rotation_vector(delta)
+    return (turn * current if policy.frame == "base" else current * turn).normalized()
+
+
+def pose_with_orientation(x: float, y: float, z: float, orientation: Quaternion, gripper: float) -> Pose:
+    roll, pitch, yaw = orientation.to_euler()
+    return Pose(x, y, z, roll, pitch, yaw, gripper, orientation)
 
 
 # Most steps one trajectory may have, and how far past a spec bound a delta
@@ -73,6 +95,7 @@ def integrate_trajectory(
     start: Pose,
     actions: list[tuple[float, ...]],
     specs: tuple[ActionSpec, ...] = VLA_ACTION_SPACE,
+    rotation: RotationPolicy | None = None,
 ) -> list[Pose]:
     """Turn a sequence of decoded 7-DOF actions into a sequence of poses.
 
@@ -82,7 +105,14 @@ def integrate_trajectory(
     taken as-is at each step rather than accumulated - summing gripper
     deltas would make the gripper drift further open/closed with every
     inference step even when the model keeps predicting "no change".
+
+    The three rotation deltas are composed with the orientation as a rotation
+    vector (axis times angle, radians) in the declared frame, not added to the
+    roll, pitch and yaw; the configuration (see rotation_policy.py) can still ask
+    for the earlier addition of angles, which is only right for small angles
+    away from pitch +-90 degrees.
     """
+    policy = rotation if rotation is not None else active_policy()
     if len(specs) != 7:
         raise TrajectoryError(f"integrate_trajectory expects a 7-DOF action space, got {len(specs)}")
 
@@ -126,12 +156,15 @@ def integrate_trajectory(
         new_roll = _require_finite(current.roll + droll, f"pose after action {step}.roll")
         new_pitch = _require_finite(current.pitch + dpitch, f"pose after action {step}.pitch")
         new_yaw = _require_finite(current.yaw + dyaw, f"pose after action {step}.yaw")
-        current = Pose(
-            x=new_x, y=new_y, z=new_z,
-            roll=_wrap_angle(new_roll),
-            pitch=_wrap_angle(new_pitch),
-            yaw=_wrap_angle(new_yaw),
-            gripper=gripper,
-        )
+        if policy.integration == "quaternion":
+            current = pose_with_orientation(new_x, new_y, new_z, compose_rotation(current.quaternion, (droll, dpitch, dyaw), policy), gripper)
+        else:
+            current = Pose(
+                x=new_x, y=new_y, z=new_z,
+                roll=_wrap_angle(new_roll),
+                pitch=_wrap_angle(new_pitch),
+                yaw=_wrap_angle(new_yaw),
+                gripper=gripper,
+            )
         poses.append(current)
     return poses

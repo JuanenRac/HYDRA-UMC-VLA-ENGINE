@@ -27,7 +27,9 @@ import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .trajectory import Pose
+from .rotation import Quaternion
+from .rotation_policy import active_policy
+from .trajectory import Pose, compose_rotation, pose_with_orientation
 
 OK = "ok"
 CLAMPED = "clamped"
@@ -217,11 +219,18 @@ def guard_trajectory(poses: list[Pose], limits: GuardLimits) -> GuardResult:
             return GuardResult(REJECTED, reasons=reasons + [f"step {index}: the gripper {wanted.gripper} is out of its range"], rejected_at_step=index)
         # the delta the model asked for, taken from the poses it integrated
         raw = (wanted.x - poses[index - 1].x, wanted.y - poses[index - 1].y, wanted.z - poses[index - 1].z)
-        angular = (
-            _angle_diff(wanted.roll, poses[index - 1].roll),
-            _angle_diff(wanted.pitch, poses[index - 1].pitch),
-            _angle_diff(wanted.yaw, poses[index - 1].yaw),
-        )
+        policy = active_policy()
+        if policy.integration == "quaternion":
+            # the turn the model asked for, as a rotation vector in the declared frame
+            previous_q, wanted_q = poses[index - 1].quaternion, wanted.quaternion
+            relative = wanted_q * previous_q.conjugate() if policy.frame == "base" else previous_q.conjugate() * wanted_q
+            angular = relative.to_rotation_vector()
+        else:
+            angular = (
+                _angle_diff(wanted.roll, poses[index - 1].roll),
+                _angle_diff(wanted.pitch, poses[index - 1].pitch),
+                _angle_diff(wanted.yaw, poses[index - 1].yaw),
+            )
         step: Vec = raw
         notes: list[str] = []
 
@@ -262,6 +271,11 @@ def guard_trajectory(poses: list[Pose], limits: GuardLimits) -> GuardResult:
         if notes:
             reasons.extend(notes)
         previous_step = actual_step
+        if policy.integration == "quaternion":
+            out.append(pose_with_orientation(
+                target[0], target[1], target[2], compose_rotation(before.quaternion, angular, policy), wanted.gripper,
+            ))
+            continue
         out.append(Pose(
             x=target[0], y=target[1], z=target[2],
             roll=_wrap(before.roll + angular[0]), pitch=_wrap(before.pitch + angular[1]), yaw=_wrap(before.yaw + angular[2]),

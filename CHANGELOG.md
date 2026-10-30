@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Rotation deltas are composed as rotations (quaternions):** the three rotation values of an action (`droll`, `dpitch`, `dyaw`) are now a rotation vector (axis times angle, radians) that turns the tool exactly, instead of being added to the roll, pitch and yaw; the order of turns counts and the result is right for large angles and near pitch 90 degrees. A pose keeps its orientation as a unit quaternion (`Pose.orientation`; the angles are derived from it), and the guard cuts a turn that is too long as a rotation about the same axis. `configs/vla-engine.json` (`--config FILE` on `trajectory integrate` and `serve`, or `HYDRA_UMC_VLA_ENGINE_CONFIG`) sets `rotation.frame` (`base` or `tool`, the frame the model was trained with) and `rotation.integration` (`quaternion`, or the earlier addition of angles, `euler`, obsolete).
+
 - **Property tests with hypothesis:** `tests/test_properties.py` checks that every token is a valid bin, that decoding an encoding is within half a bin, that a decoded token encodes back to itself, that encoding keeps the order of two values, that a value that is not finite is refused, and that a trajectory has one pose per action with wrapped angles. hypothesis is only a development dependency (the `dev` extra); the tests are skipped where it is not installed.
 
 ## [0.1.9] - Trajectory proposals signed with an expiry, a robot, the model and the instruction, and the universal README

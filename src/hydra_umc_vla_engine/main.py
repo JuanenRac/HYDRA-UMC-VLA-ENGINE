@@ -28,6 +28,7 @@ from .proposal_signing import ProposalKeyError, load_key, sign_proposal
 from .api import VlaEngineServer
 from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
 from .hardware import EngineMode, check_engine_status
+from .rotation_policy import RotationConfigError, load_rotation_policy, set_active_policy
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
 
 PROJECT_NAME = "HYDRA-UMC-VLA-ENGINE"
@@ -104,7 +105,19 @@ def _cmd_tokens_decode(args: argparse.Namespace) -> int:
     return 0
 
 
+def _apply_config(args: argparse.Namespace) -> bool:
+    """Read the rotation settings of the configuration file; False (after the message) when they cannot be used."""
+    try:
+        set_active_policy(load_rotation_policy(args.config))
+    except RotationConfigError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return False
+    return True
+
+
 def _cmd_trajectory_integrate(args: argparse.Namespace) -> int:
+    if not _apply_config(args):
+        return 2
     try:
         start_values = _parse_floats(args.start, 6, "--start")
         actions_raw = json.loads(Path(args.actions).read_text(encoding="utf-8"))
@@ -132,6 +145,8 @@ def _cmd_trajectory_integrate(args: argparse.Namespace) -> int:
 
 
 def _cmd_serve(args: argparse.Namespace) -> int:
+    if not _apply_config(args):
+        return 2
     try:
         token = load_token(args.token_file)
     except ValueError as exc:
@@ -205,6 +220,7 @@ def _build_parser() -> argparse.ArgumentParser:
     integrate.add_argument("--start-gripper", type=float, default=0.0, dest="start_gripper")
     integrate.add_argument("--actions", required=True, help="Path to a JSON array of [dx,dy,dz,droll,dpitch,dyaw,gripper] arrays")
     integrate.add_argument("--guard-file", default=None, dest="guard_file", help="Check the trajectory against the limits and zones of the cell in this JSON file (see guard.py); a rejected trajectory exits 1")
+    integrate.add_argument("--config", default=None, help="Configuration file with how the rotation deltas are integrated (default: the file named by HYDRA_UMC_VLA_ENGINE_CONFIG, else quaternion composition in the base frame)")
     integrate.set_defaults(func=_cmd_trajectory_integrate)
 
     status = subparsers.add_parser(
@@ -242,6 +258,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     serve.add_argument("--guard-file", default=None, dest="guard_file", help="JSON file with the work volume, step limits and zones every trajectory is checked against (or HYDRA_UMC_VLA_GUARD_FILE)")
     serve.add_argument("--require-guard", action="store_true", dest="require_guard", help="Offer no trajectory at all unless a guard file is loaded")
+    serve.add_argument("--config", default=None, help="Configuration file with how the rotation deltas are integrated (default: the file named by HYDRA_UMC_VLA_ENGINE_CONFIG, else quaternion composition in the base frame)")
     serve.set_defaults(func=_cmd_serve)
 
     return parser

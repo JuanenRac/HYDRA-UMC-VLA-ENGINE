@@ -1,0 +1,6 @@
+{
+  "rotation": {
+    "integration": "quaternion",
+    "frame": "base"
+  }
+}
