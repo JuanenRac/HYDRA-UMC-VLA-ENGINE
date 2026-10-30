@@ -11,6 +11,7 @@
   ],
   "deployment_target": "cm5",
   "maturity": "functional",
+  "evidence": "none",
   "family": "Cognitive AI Node",
   "parent": "HYDRA-UMC-COGNITIVE-NODE",
   "build": "Vision-Language-Action engine. Expect large model downloads on first installation for the real model integration (still future work).",
