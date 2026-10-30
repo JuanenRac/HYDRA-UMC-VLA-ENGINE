@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Trajectory proposals can be signed, with an expiry and a robot:** `serve --proposal-key-file FILE --robot-id ROBOT` (off by default) adds `robot_id`, `issued_at_ms`, `expires_at_ms` and an HMAC-SHA256 `signature` over the fingerprint, the robot and the time window to the proposal that `POST /trajectory/integrate` returns (60 seconds by default, 600 at most). `verify_proposal()` refuses an altered, expired, future-dated or other-robot proposal. A proposal is still never an order. Without the switch the answer is unchanged.
+
 - **The notes of the project manifest no longer carry a hand-written test count:** the counts went out of date at every change; the number of tests is stated by the README, which is checked against the code.
 - **README in the universal layout:** the README and its seven translations follow the layout that the four families share (22 sections in a fixed order), with an architecture picture and a repository-structure picture drawn from `docs/architecture.json` and `docs/structure.json`; the CI validator checks both pictures and the file tree.
 

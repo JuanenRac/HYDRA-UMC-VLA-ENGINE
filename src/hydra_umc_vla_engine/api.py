@@ -20,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from .proposal_signing import sign_proposal
 from .access import authorized, reject
 from .guard import REJECTED, GuardLimits, guard_trajectory
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
@@ -92,7 +93,7 @@ def _query_params(handler: BaseHTTPRequestHandler) -> dict[str, str]:
     return {key: value[0] for key, value in values.items() if value}
 
 
-def proposal_record(poses: list[dict]) -> dict:
+def proposal_record(poses: list[dict], signer: tuple[bytes, str, int] | None = None) -> dict:
     """Marks a trajectory as a proposal, never an order.
 
     The engine only integrates predicted actions into poses; nothing here
@@ -101,11 +102,16 @@ def proposal_record(poses: list[dict]) -> dict:
     approves and cannot be reused for a different one.
     """
     canonical = json.dumps(poses, sort_keys=True, separators=(",", ":"))
-    return {
+    record = {
         "authorized": False,
         "fingerprint": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
         "requires": "approval by an authenticated control before any execution",
     }
+    if signer is not None:
+        # signer = (key, robot_id, validity_ms): the proposal also names its robot and time window, signed (proposal_signing.py)
+        key, robot_id, validity_ms = signer
+        record.update(sign_proposal(key, record["fingerprint"], robot_id, validity_ms=validity_ms))
+    return record
 
 
 def _strict_number(value: object, label: str) -> float:
@@ -245,7 +251,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             guard_info = {"outcome": "not_configured", "reasons": [], "rejected_at_step": None}
         pose_dicts = [asdict(p) for p in poses]
-        _write_json(self, 200, {"poses": pose_dicts, "guard": guard_info, "proposal": proposal_record(pose_dicts)})
+        _write_json(self, 200, {"poses": pose_dicts, "guard": guard_info, "proposal": proposal_record(pose_dicts, self.server.proposal_signer)})
 
 
 class VlaEngineServer(ThreadingHTTPServer):
@@ -256,8 +262,11 @@ class VlaEngineServer(ThreadingHTTPServer):
         token: str = "",
         guard: GuardLimits | None = None,
         require_guard: bool = False,
+        proposal_signer: tuple[bytes, str, int] | None = None,
     ) -> None:
         super().__init__(address, Handler)
+        # (key, robot_id, validity_ms): with it every proposal is signed for that robot and a short time window
+        self.proposal_signer = proposal_signer
         # the limits of the cell every trajectory is checked against (guard.py); with require_guard no trajectory is offered without them
         self.guard = guard
         self.require_guard = require_guard

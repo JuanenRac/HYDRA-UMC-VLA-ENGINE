@@ -24,6 +24,7 @@ from pathlib import Path
 from . import __version__
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
 from .access import bind_problem, load_token
+from .proposal_signing import ProposalKeyError, load_key, sign_proposal
 from .api import VlaEngineServer
 from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
 from .hardware import EngineMode, check_engine_status
@@ -151,7 +152,18 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     if args.require_guard and guard is None:
         print("error: --require-guard needs a guard file (--guard-file or HYDRA_UMC_VLA_GUARD_FILE)", file=sys.stderr)
         return 2
-    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard)
+    signer = None
+    if args.proposal_key_file:
+        if not args.robot_id.strip():
+            print("error: --proposal-key-file needs --robot-id: a signed proposal is for one robot", file=sys.stderr)
+            return 2
+        try:
+            signer = (load_key(args.proposal_key_file), args.robot_id, int(args.proposal_valid_seconds * 1000))
+            sign_proposal(signer[0], "0" * 64, signer[1], validity_ms=signer[2])
+        except (ProposalKeyError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer)
     if guard is None:
         print("[vla-engine] no trajectory guard: trajectories are offered with guard=not_configured (give --guard-file to check them against the limits of the cell)")
     else:
@@ -214,6 +226,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     serve.add_argument("--addr", default="127.0.0.1", help="address to bind the HTTP API to")
     serve.add_argument("--port", type=int, default=8098, help="port for the HTTP API")
+    serve.add_argument("--proposal-key-file", default=None, dest="proposal_key_file",
+                       help="file with the key that signs every trajectory proposal for --robot-id and a short time window (off by default: the proposal only carries its fingerprint)")
+    serve.add_argument("--robot-id", default="", dest="robot_id", help="the robot the signed proposals are for (needed with --proposal-key-file)")
+    serve.add_argument("--proposal-valid-seconds", type=float, default=60.0, dest="proposal_valid_seconds",
+                       help="how long a signed proposal stays valid, at most 600 (default 60)")
     serve.add_argument("--token-file", default=None, help="file with the bearer token every request must present (or the HYDRA_UMC_VLA_ENGINE_TOKEN environment variable). Needed to bind an address that is not loopback.")
     serve.add_argument(
         "--workspace",
