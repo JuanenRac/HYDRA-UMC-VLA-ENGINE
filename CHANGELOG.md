@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Confidence filter:** with `confidence.minimum` above 0 in `configs/vla-engine.json` (0 is off, the default), `POST /trajectory/integrate` needs one `confidences` value per action and offers no trajectory (HTTP 422, with the indices of the doubtful actions) when any is below the minimum; a request without the values is refused (HTTP 400) rather than let through.
+
 - **Rotation deltas are composed as rotations (quaternions):** the three rotation values of an action (`droll`, `dpitch`, `dyaw`) are now a rotation vector (axis times angle, radians) that turns the tool exactly, instead of being added to the roll, pitch and yaw; the order of turns counts and the result is right for large angles and near pitch 90 degrees. A pose keeps its orientation as a unit quaternion (`Pose.orientation`; the angles are derived from it), and the guard cuts a turn that is too long as a rotation about the same axis. `configs/vla-engine.json` (`--config FILE` on `trajectory integrate` and `serve`, or `HYDRA_UMC_VLA_ENGINE_CONFIG`) sets `rotation.frame` (`base` or `tool`, the frame the model was trained with) and `rotation.integration` (`quaternion`, or the earlier addition of angles, `euler`, obsolete).
 
 - **Property tests with hypothesis:** `tests/test_properties.py` checks that every token is a valid bin, that decoding an encoding is within half a bin, that a decoded token encodes back to itself, that encoding keeps the order of two values, that a value that is not finite is refused, and that a trajectory has one pose per action with wrapped angles. hypothesis is only a development dependency (the `dev` extra); the tests are skipped where it is not installed.

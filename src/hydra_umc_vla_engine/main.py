@@ -28,6 +28,7 @@ from .proposal_signing import ProposalKeyError, load_key, sign_proposal
 from .api import VlaEngineServer
 from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
 from .hardware import EngineMode, check_engine_status
+from .confidence import ConfidenceConfigError, load_confidence_policy
 from .rotation_policy import RotationConfigError, load_rotation_policy, set_active_policy
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
 
@@ -178,7 +179,12 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         except (ProposalKeyError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
-    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer, model_version=args.model_version.strip())
+    try:
+        confidence = load_confidence_policy(args.config)
+    except ConfidenceConfigError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer, model_version=args.model_version.strip(), confidence=confidence)
     if guard is None:
         print("[vla-engine] no trajectory guard: trajectories are offered with guard=not_configured (give --guard-file to check them against the limits of the cell)")
     else:

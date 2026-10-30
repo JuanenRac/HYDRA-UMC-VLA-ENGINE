@@ -2,5 +2,8 @@
   "rotation": {
     "integration": "quaternion",
     "frame": "base"
+  },
+  "confidence": {
+    "minimum": 0.0
   }
 }
