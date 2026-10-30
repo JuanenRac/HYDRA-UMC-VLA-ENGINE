@@ -20,7 +20,7 @@ keywords = ["hydra-umc", "hailo-10", "vla", "vision-language-action", "robotics"
 # header) so this extra is only needed to actually run inference against
 # a real Hailo-10 module - never to import or test this package.
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "hypothesis>=6.100"]
 hailo = ["hailort"]
 
 [project.urls]

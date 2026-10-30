@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Property tests with hypothesis:** `tests/test_properties.py` checks that every token is a valid bin, that decoding an encoding is within half a bin, that a decoded token encodes back to itself, that encoding keeps the order of two values, that a value that is not finite is refused, and that a trajectory has one pose per action with wrapped angles. hypothesis is only a development dependency (the `dev` extra); the tests are skipped where it is not installed.
+
 ## [0.1.9] - Trajectory proposals signed with an expiry, a robot, the model and the instruction, and the universal README
 
 - **A signed proposal can also bind the model and the instruction:** `serve --model-version V` and an `instruction_sha256` in the request of `POST /trajectory/integrate` are signed into the proposal (the signed message is now `v2`), and `verify_proposal()` can require them. 5 new tests (155 in all).
