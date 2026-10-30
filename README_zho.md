@@ -217,6 +217,7 @@ HYDRA-UMC-VLA-ENGINE/
 ├── tests/                      真实 pytest 套件（action_tokens、trajectory、manifest、hardware、hailo_runtime、api、CLI）
 ├── docs/                       文档与基准测试
 ├── images/                     媒体与图表
+├── configs/                    旋转增量配置
 ├── systemd/                    服务单元
 ├── tools/                      项目工具和 CI 检查
 ├── .github/                    CI 工作流和 Issue 模板

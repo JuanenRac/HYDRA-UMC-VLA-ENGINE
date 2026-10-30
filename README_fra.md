@@ -280,6 +280,7 @@ HYDRA-UMC-VLA-ENGINE/
 ├── tests/                      Suite pytest réelle (action_tokens, trajectory, manifest, hardware, hailo_runtime, api, CLI)
 ├── docs/                       Documentation et benchmarks
 ├── images/                     Médias et diagrammes
+├── configs/                    configuration des deltas de rotation
 ├── systemd/                    unité de service
 ├── tools/                      outils du projet et vérifications de la CI
 ├── .github/                    workflow de CI et modèles de tickets

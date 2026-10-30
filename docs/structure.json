@@ -357,6 +357,29 @@
           }
         },
         {
+          "name": "configs/",
+          "desc": {
+            "en": "configuration of the rotation deltas",
+            "es": "configuración de los deltas de rotación",
+            "de": "Konfiguration der Rotationsdeltas",
+            "fr": "configuration des deltas de rotation",
+            "it": "configurazione dei delta di rotazione",
+            "ja": "回転デルタの設定",
+            "zh": "旋转增量配置",
+            "pt": "configuração dos deltas de rotação"
+          },
+          "tree_desc": {
+            "en": "configuration of the rotation deltas",
+            "es": "configuración de los deltas de rotación",
+            "de": "Konfiguration der Rotationsdeltas",
+            "fr": "configuration des deltas de rotation",
+            "it": "configurazione dei delta di rotazione",
+            "ja": "回転デルタの設定",
+            "zh": "旋转增量配置",
+            "pt": "configuração dos deltas de rotação"
+          }
+        },
+        {
           "name": "systemd/",
           "desc": {
             "en": "service unit",

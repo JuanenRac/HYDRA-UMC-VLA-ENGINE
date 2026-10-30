@@ -220,6 +220,7 @@ HYDRA-UMC-VLA-ENGINE/
 ├── tests/                      実際の pytest スイート（action_tokens、trajectory、manifest、hardware、hailo_runtime、api、CLI）
 ├── docs/                       ドキュメントとベンチマーク
 ├── images/                     メディアと図表
+├── configs/                    回転デルタの設定
 ├── systemd/                    サービスユニット
 ├── tools/                      プロジェクトのツールと CI の検査
 ├── .github/                    CI ワークフローと Issue テンプレート
