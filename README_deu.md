@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-138%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-150%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,12 +35,12 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.1.8` |
 | Reifegrad | Funktionsfähig |
-| Tests | 138 (`python -m pytest -q tests`) |
+| Tests | 150 (`python -m pytest -q tests`) |
 | Technik | Python / Vision-Language-Action model |
 | Ziel | Der Raspberry Pi CM5 einer HYDRA-UMC-Zelle |
 | Auf echter Hardware | Noch nicht: für diese Version ist kein Lauf auf echter Hardware vermerkt |
 
-**Springe zu:** [Überblick](#-überblick) · [Architektur](#-architektur) · [Schnellstart](#-schnellstart) · [Tests](#-tests) · [Struktur des Repositorys](#-struktur-des-repositorys) · [Verwandte Projekte](#-verwandte-projekte)
+**Springe zu:** [Überblick](#-überblick) · [Architektur](#-architektur) · [Sicherheit und Schutz](#-sicherheit-und-schutz) · [Schnellstart](#-schnellstart) · [Tests](#-tests) · [Struktur des Repositorys](#-struktur-des-repositorys) · [Verwandte Projekte](#-verwandte-projekte)
 
 ## 🚦 Projektstatus
 
@@ -51,7 +51,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 | Bereich | Stand | Was das hier bedeutet |
 |---|---|---|
 | Software | 🟡 | Funktioniert für seinen Hauptzweck; die Ehrlichkeitsprüfung oben nennt, was noch fehlt |
-| Tests | 🟢 | 138 automatische Tests, bei jeder Änderung ausgeführt |
+| Tests | 🟢 | 150 automatische Tests, bei jeder Änderung ausgeführt |
 | Echte Hardware | 🔴 | Noch nicht: für diese Version ist kein Lauf auf echter Hardware vermerkt |
 | Dokumentation | 🟢 | README in acht Sprachen, bei jeder Änderung gegen das Manifest geprüft |
 
@@ -159,6 +159,10 @@ neben seinen drei Geschwistern (Voice-UI, Semantic-Planner, Docs-QA) ein:
   dasselbe echte Verzeichnis, das `check_shared_models()` dieses Repos
   bereits prüft.
 
+## 🔒 Sicherheit und Schutz
+
+Trajektorienvorschläge können signiert werden (standardmäßig aus): `serve --proposal-key-file DATEI --robot-id ROBOT [--proposal-valid-seconds N]` fügt dem, was `POST /trajectory/integrate` liefert, `robot_id`, `issued_at_ms`, `expires_at_ms` und eine HMAC-SHA256-`signature` hinzu (standardmäßig 60 Sekunden gültig, höchstens 600), und `verify_proposal()` lehnt einen veränderten, abgelaufenen, in der Zukunft datierten oder für einen anderen Roboter gedachten Vorschlag ab. Ein Vorschlag ist weiterhin nie ein Befehl. Der Schlüssel (mindestens 16 Bytes) liegt in einer Datei der Installation, nie im Repository.
+
 ## 🚀 Schnellstart
 
 Benötigt Python 3.10 oder neuer.
@@ -173,7 +177,7 @@ Benötigt Python 3.10 oder neuer.
 
 ## 🧪 Tests
 
-138 automatische Tests laufen mit `python -m pytest -q tests`. Sie brauchen weder Hardware noch etwas außerhalb dieses Rechners.
+150 automatische Tests laufen mit `python -m pytest -q tests`. Sie brauchen weder Hardware noch etwas außerhalb dieses Rechners.
 
 Die CI führt `HYDRA_UMC_CI=1 python tools/ci_validate.py` aus; das prüft das Manifest, die Dokumente, die acht READMEs und die Bilder.
 
@@ -297,7 +301,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### Aktueller Status & Nächste Schritte
 
-**Heute real:** die Aktions-Token-Kodierung/-Dekodierung und die Trajektoriengenerierung (`action_tokens.py`, `trajectory.py`) - die Schritte "Aktions-Token" und "Trajektoriengenerator" im obigen Ablaufdiagramm - plus eine echte HailoRT-Integrationsgrenze (`hailo_runtime.py`), bereit für ein echtes `.hef`-Modell und ein Hailo-10-Modul, sobald diese existieren. 138 Tests und eine echte CLI.
+**Heute real:** die Aktions-Token-Kodierung/-Dekodierung und die Trajektoriengenerierung (`action_tokens.py`, `trajectory.py`) - die Schritte "Aktions-Token" und "Trajektoriengenerator" im obigen Ablaufdiagramm - plus eine echte HailoRT-Integrationsgrenze (`hailo_runtime.py`), bereit für ein echtes `.hef`-Modell und ein Hailo-10-Modul, sobald diese existieren. 150 Tests und eine echte CLI.
 
 **Noch offen, und blockiert durch echte Hardware/ein echtes Modell:** tatsächlich Inferenz auszuführen braucht ein echtes, kompiliertes VLA-`.hef`-Modell (OpenVLA/RT-2 quantisiert für Hailo-10 - noch kein konkretes Modell gewählt) und ein angeschlossenes physisches Hailo-10-Modul, beides echte, unvermeidliche Blocker, die `hailo_runtime.py` allein nicht beseitigen kann - aber ein Modell zu laden und zu dekodieren, sobald es existiert, ist kein ungeschriebener Code mehr.
 

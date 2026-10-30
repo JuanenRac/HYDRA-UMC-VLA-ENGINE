@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-138%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-150%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,12 +35,12 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.1.8` |
 | Maturity | Functional |
-| Tests | 138 (`python -m pytest -q tests`) |
+| Tests | 150 (`python -m pytest -q tests`) |
 | Stack | Python / Vision-Language-Action model |
 | Target | The Raspberry Pi CM5 of a HYDRA-UMC cell |
 | On real hardware | Not yet: no run on real hardware is recorded for this version |
 
-**Jump to:** [Overview](#-overview) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Testing](#-testing) · [Repository Structure](#-repository-structure) · [Related Projects](#-related-projects)
+**Jump to:** [Overview](#-overview) · [Architecture](#-architecture) · [Security & Safety](#-security--safety) · [Quick start](#-quick-start) · [Testing](#-testing) · [Repository Structure](#-repository-structure) · [Related Projects](#-related-projects)
 
 ## 🚦 Project status
 
@@ -51,7 +51,7 @@ Each line is one part of this repository and the light says how far it is today.
 | Area | State | What it means here |
 |---|---|---|
 | Software | 🟡 | Works for its main purpose; the honesty check above lists what is still missing |
-| Tests | 🟢 | 138 automated tests, run on every change |
+| Tests | 🟢 | 150 automated tests, run on every change |
 | Real hardware | 🔴 | Not yet: no run on real hardware is recorded for this version |
 | Documentation | 🟢 | README in eight languages, checked against the manifest on every change |
 
@@ -157,6 +157,10 @@ service into `docker-compose.yml` alongside its three siblings
   level up, the same real directory that repo's own
   `check_shared_models()` already checks.
 
+## 🔒 Security & Safety
+
+Trajectory proposals can be signed (off by default): `serve --proposal-key-file FILE --robot-id ROBOT [--proposal-valid-seconds N]` adds `robot_id`, `issued_at_ms`, `expires_at_ms` and an HMAC-SHA256 `signature` to what `POST /trajectory/integrate` returns (valid 60 seconds by default, 600 at most), and `verify_proposal()` refuses an altered, expired, future-dated or other-robot proposal. A proposal is still never an order. The key (at least 16 bytes) lives in a file of the installation, never in the repository.
+
 ## 🚀 Quick start
 
 Requires Python 3.10 or newer.
@@ -171,7 +175,7 @@ Requires Python 3.10 or newer.
 
 ## 🧪 Testing
 
-138 automated tests run with `python -m pytest -q tests`. They need no hardware and nothing outside this machine.
+150 automated tests run with `python -m pytest -q tests`. They need no hardware and nothing outside this machine.
 
 The CI runs `HYDRA_UMC_CI=1 python tools/ci_validate.py`, which checks the manifest, the documents, the eight READMEs and the pictures.
 
@@ -293,7 +297,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### Current Status & Next Steps
 
-**Real today:** action-token encoding/decoding and trajectory generation (`action_tokens.py`, `trajectory.py`) - the "Action Tokens" and "Trajectory Generator" steps in the flow diagram above - plus a real HailoRT integration boundary (`hailo_runtime.py`) ready for a real `.hef` model and a Hailo-10 module the moment they exist. 138 tests and a real CLI.
+**Real today:** action-token encoding/decoding and trajectory generation (`action_tokens.py`, `trajectory.py`) - the "Action Tokens" and "Trajectory Generator" steps in the flow diagram above - plus a real HailoRT integration boundary (`hailo_runtime.py`) ready for a real `.hef` model and a Hailo-10 module the moment they exist. 150 tests and a real CLI.
 
 **Still ahead, and blocked on real hardware/a real model:** actually running inference needs a real compiled `.hef` VLA model (OpenVLA/RT-2 quantized for Hailo-10 - no specific model chosen yet) and a physical Hailo-10 module attached, both real, unavoidable blockers `hailo_runtime.py` cannot remove on its own - but loading and decoding one, once it exists, is no longer unwritten code.
 

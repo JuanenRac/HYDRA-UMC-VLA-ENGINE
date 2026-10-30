@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-138%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-150%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,12 +35,12 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Versão | `0.1.8` |
 | Maturidade | Funcional |
-| Testes | 138 (`python -m pytest -q tests`) |
+| Testes | 150 (`python -m pytest -q tests`) |
 | Tecnologia | Python / Vision-Language-Action model |
 | Destino | O Raspberry Pi CM5 de uma célula HYDRA-UMC |
 | Em hardware real | Ainda não: não há registo de execução em hardware real para esta versão |
 
-**Ir para:** [Visão geral](#-visão-geral) · [Arquitetura](#-arquitetura) · [Início rápido](#-início-rápido) · [Testes](#-testes) · [Estrutura do repositório](#-estrutura-do-repositório) · [Projetos relacionados](#-projetos-relacionados)
+**Ir para:** [Visão geral](#-visão-geral) · [Arquitetura](#-arquitetura) · [Segurança e proteção](#-segurança-e-proteção) · [Início rápido](#-início-rápido) · [Testes](#-testes) · [Estrutura do repositório](#-estrutura-do-repositório) · [Projetos relacionados](#-projetos-relacionados)
 
 ## 🚦 Estado do projeto
 
@@ -51,7 +51,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 | Área | Estado | O que significa aqui |
 |---|---|---|
 | Software | 🟡 | Funciona para o seu propósito principal; a verificação de honestidade acima lista o que ainda falta |
-| Testes | 🟢 | 138 testes automáticos, executados a cada alteração |
+| Testes | 🟢 | 150 testes automáticos, executados a cada alteração |
 | Hardware real | 🔴 | Ainda não: não há registo de execução em hardware real para esta versão |
 | Documentação | 🟢 | README em oito idiomas, verificado contra o manifesto a cada alteração |
 
@@ -112,6 +112,10 @@ Este repositório é um **filho** da família Cognitive AI Node - o seu pai, o [
 * **Porque o `status` reporta `hardware_ready_no_inference` em vez de "pronto".** Mesmo quando um dispositivo Hailo-10 real e pesos de modelo reais estiverem presentes, esta v0 continua sem código de inferência real - alegar prontidão nesse ponto seria uma mentira real sobre uma capacidade que ainda não existe. O `determine_mode()` de `hardware.py` verifica primeiro o acelerador (uma sonda barata do nó de dispositivo) e só depois os pesos do modelo, a mesma ordem de pré-condição mais barata primeiro que o `safe_load()` do `HYDRA-UMC-DETECTION-HEF` já usa.
 * **Porque o `model_weights_available()` verifica o `models/` do pai e não um local.** Este filho não tem `models/` próprio (removido - veja o ponto acima) - os pesos partilhados reais vivem no `models/` do próprio pai `HYDRA-UMC-COGNITIVE-NODE`, um nível acima no espaço de trabalho de irmãos, o mesmo diretório real que o `check_shared_models()` desse repositório já verifica.
 
+## 🔒 Segurança e proteção
+
+As propostas de trajetória podem ser assinadas (desligado por predefinição): `serve --proposal-key-file FICHEIRO --robot-id ROBOT [--proposal-valid-seconds N]` acrescenta `robot_id`, `issued_at_ms`, `expires_at_ms` e uma `signature` HMAC-SHA256 ao que `POST /trajectory/integrate` devolve (válida 60 segundos por predefinição, 600 no máximo), e `verify_proposal()` recusa uma proposta alterada, expirada, com data futura ou de outro robô. Uma proposta continua a nunca ser uma ordem. A chave (pelo menos 16 bytes) fica num ficheiro da instalação, nunca no repositório.
+
 ## 🚀 Início rápido
 
 Requer Python 3.10 ou superior.
@@ -126,7 +130,7 @@ Requer Python 3.10 ou superior.
 
 ## 🧪 Testes
 
-138 testes automáticos correm com `python -m pytest -q tests`. Não precisam de hardware nem de nada fora desta máquina.
+150 testes automáticos correm com `python -m pytest -q tests`. Não precisam de hardware nem de nada fora desta máquina.
 
 A CI executa `HYDRA_UMC_CI=1 python tools/ci_validate.py`, que verifica o manifesto, os documentos, os oito README e as imagens.
 
@@ -235,7 +239,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### Estado atual e próximos passos
 
-**Real hoje:** codificação/descodificação de tokens de ação e geração de trajetórias (`action_tokens.py`, `trajectory.py`) - os passos "Action Tokens" e "Trajectory Generator" do diagrama de fluxo acima - mais uma fronteira real de integração com o HailoRT (`hailo_runtime.py`) pronta para um `.hef` real e um módulo Hailo-10 no momento em que existirem. 138 testes e uma CLI real.
+**Real hoje:** codificação/descodificação de tokens de ação e geração de trajetórias (`action_tokens.py`, `trajectory.py`) - os passos "Action Tokens" e "Trajectory Generator" do diagrama de fluxo acima - mais uma fronteira real de integração com o HailoRT (`hailo_runtime.py`) pronta para um `.hef` real e um módulo Hailo-10 no momento em que existirem. 150 testes e uma CLI real.
 
 **Ainda por fazer, e bloqueado por hardware real/um modelo real:** executar inferência precisa de um modelo VLA `.hef` compilado real (OpenVLA/RT-2 quantizado para Hailo-10 - ainda sem modelo concreto escolhido) e de um módulo Hailo-10 físico ligado, dois bloqueios reais e inevitáveis que o `hailo_runtime.py` não consegue remover sozinho - mas carregar e descodificar um, quando existir, já não é código por escrever.
 
