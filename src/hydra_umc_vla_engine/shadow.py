@@ -83,7 +83,7 @@ def compare_actions(proposed: object, operator: object) -> dict:
     common = min(len(mine), len(theirs))
     steps = []
     for step in range(common):
-        delta = [a - b for a, b in zip(mine[step], theirs[step])]
+        delta = [a - b for a, b in zip(mine[step], theirs[step], strict=False)]
         steps.append({
             "step": step,
             "linear": math.sqrt(sum(d * d for d in delta[:3])),

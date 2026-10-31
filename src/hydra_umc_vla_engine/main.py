@@ -127,7 +127,7 @@ def _cmd_trajectory_integrate(args: argparse.Namespace) -> int:
         if not isinstance(actions_raw, list):
             raise TrajectoryError("actions: expected a JSON array")
         actions = [tuple(a) for a in actions_raw]
-        start = Pose(*start_values, gripper=args.start_gripper)
+        start = Pose(*start_values, gripper=args.start_gripper)  # type: ignore[misc,arg-type]
         poses = integrate_trajectory(start, actions)
         if args.guard_file:
             result = guard_trajectory(poses, load_limits(args.guard_file))

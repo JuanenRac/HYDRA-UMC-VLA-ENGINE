@@ -122,7 +122,7 @@ def load_hailo_vla_model(vdevice: object, hef_path: Path) -> HailoVlaModel:
 
     hef = HEF(str(hef_path))
     configure_params = ConfigureParams.create_from_hef(hef, interface=HailoStreamInterface.PCIe)
-    network_groups = vdevice.configure(hef, configure_params)
+    network_groups = vdevice.configure(hef, configure_params)  # type: ignore[attr-defined]
     network_group = network_groups[0]
 
     input_infos = hef.get_input_vstream_infos()

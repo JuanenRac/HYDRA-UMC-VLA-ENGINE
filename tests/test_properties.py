@@ -45,7 +45,7 @@ def test_every_token_is_a_valid_bin(values, vocab_size):
 @given(in_range_vectors(), vocab_sizes)
 def test_decoding_an_encoding_is_within_half_a_bin(values, vocab_size):
     decoded = decode_action(encode_action(values, vocab_size=vocab_size), vocab_size=vocab_size, snap_zero=False)
-    for value, back, spec in zip(values, decoded, VLA_ACTION_SPACE):
+    for value, back, spec in zip(values, decoded, VLA_ACTION_SPACE, strict=False):
         half_bin = (spec.max - spec.min) / vocab_size / 2
         assert abs(back - value) <= half_bin * (1 + 1e-9) + 1e-12
 

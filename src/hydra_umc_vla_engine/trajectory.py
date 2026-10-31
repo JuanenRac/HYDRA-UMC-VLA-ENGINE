@@ -117,7 +117,7 @@ def integrate_trajectory(
         raise TrajectoryError(f"integrate_trajectory expects a 7-DOF action space, got {len(specs)}")
 
     start_values = (start.x, start.y, start.z, start.roll, start.pitch, start.yaw, start.gripper)
-    for label, value in zip(("start.x", "start.y", "start.z", "start.roll", "start.pitch", "start.yaw", "start.gripper"), start_values):
+    for label, value in zip(("start.x", "start.y", "start.z", "start.roll", "start.pitch", "start.yaw", "start.gripper"), start_values, strict=False):
         _require_finite(value, label)
 
     if len(actions) > MAX_STEPS:

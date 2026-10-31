@@ -27,7 +27,6 @@ import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .rotation import Quaternion
 from .rotation_policy import active_policy
 from .trajectory import Pose, compose_rotation, pose_with_orientation
 

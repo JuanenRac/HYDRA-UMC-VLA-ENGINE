@@ -60,7 +60,7 @@ def test_round_trip_within_bin_resolution():
     original = (0.02, -0.03, 0.01, 0.05, -0.04, 0.02, 0.7)
     tokens = encode_action(original)
     decoded = decode_action(tokens)
-    for orig, dec, spec in zip(original, decoded, VLA_ACTION_SPACE):
+    for orig, dec, spec in zip(original, decoded, VLA_ACTION_SPACE, strict=False):
         bin_width = (spec.max - spec.min) / 256
         assert abs(orig - dec) <= bin_width
 

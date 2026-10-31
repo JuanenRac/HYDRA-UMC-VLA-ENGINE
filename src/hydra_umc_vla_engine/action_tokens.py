@@ -85,7 +85,7 @@ def encode_action(
     if len(values) != len(specs):
         raise TokenizationError(f"expected {len(specs)} action values, got {len(values)}")
     tokens = []
-    for value, spec in zip(values, specs):
+    for value, spec in zip(values, specs, strict=False):
         if not math.isfinite(value):
             raise TokenizationError(f"{spec.name}: the action value must be a finite number, got {value!r}")
         clamped = _clamp(value, spec.min, spec.max)
@@ -115,7 +115,7 @@ def decode_action(
     if len(tokens) != len(specs):
         raise TokenizationError(f"expected {len(specs)} tokens, got {len(tokens)}")
     values = []
-    for token, spec in zip(tokens, specs):
+    for token, spec in zip(tokens, specs, strict=False):
         if not (0 <= token < vocab_size):
             raise TokenizationError(f"{spec.name}: token {token} out of range [0, {vocab_size})")
         bin_center_fraction = (token + 0.5) / vocab_size

@@ -105,6 +105,8 @@ def verify_proposal(
         return False, "the proposal is not signed"
     if any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in (issued, expires)):
         return False, "the proposal has no valid time window"
+    if issued is None or expires is None:
+        return False, "the proposal has no valid time window"
     model_version = proposal.get("model_version", "")
     instruction = proposal.get("instruction_sha256", "")
     if not isinstance(model_version, str) or not isinstance(instruction, str):

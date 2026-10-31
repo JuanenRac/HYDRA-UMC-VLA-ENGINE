@@ -97,10 +97,10 @@ def inconsistent_steps(actions: list[tuple[float, ...]], alternatives: object, p
     for which, sequence in enumerate(alternatives):
         if not isinstance(sequence, list) or len(sequence) != len(actions):
             raise ConsistencyConfigError(f"alternatives[{which}]: expected {len(actions)} actions, as many as actions")
-        for step, (mine, other) in enumerate(zip(actions, sequence)):
+        for step, (mine, other) in enumerate(zip(actions, sequence, strict=False)):
             if not isinstance(other, (list, tuple)) or len(other) != len(mine):
                 raise ConsistencyConfigError(f"alternatives[{which}][{step}]: expected {len(mine)} numbers")
-            for index, (a, b) in enumerate(zip(mine, other)):
+            for index, (a, b) in enumerate(zip(mine, other, strict=False)):
                 if isinstance(b, bool) or not isinstance(b, (int, float)) or not math.isfinite(b):
                     raise ConsistencyConfigError(f"alternatives[{which}][{step}][{index}] must be a finite number, got {b!r}")
                 if abs(a - b) > policy.tolerance[_group(index)]:

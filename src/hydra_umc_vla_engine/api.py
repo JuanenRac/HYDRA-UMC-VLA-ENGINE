@@ -35,7 +35,7 @@ from .trajectory import Pose, TrajectoryError, integrate_trajectory
 def _write_json(handler: BaseHTTPRequestHandler, status: int, payload: object) -> None:
     def default(o: object) -> object:
         if hasattr(o, "__dataclass_fields__"):
-            return asdict(o)
+            return asdict(o)  # type: ignore[call-overload]
         if hasattr(o, "value"):  # enum
             return o.value
         return str(o)
@@ -112,7 +112,7 @@ def proposal_record(
     approves and cannot be reused for a different one.
     """
     canonical = json.dumps(poses, sort_keys=True, separators=(",", ":"))
-    record = {
+    record: dict = {
         "authorized": False,
         "fingerprint": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
         "requires": "approval by an authenticated control before any execution",
@@ -254,7 +254,7 @@ class Handler(BaseHTTPRequestHandler):
     def _handle_integrate(self, body: dict) -> None:
         try:
             start_values = tuple(_strict_number(v, "start") for v in body["start"])
-            start = Pose(*start_values, gripper=_strict_number(body.get("start_gripper", 0.0), "start_gripper"))
+            start = Pose(*start_values, gripper=_strict_number(body.get("start_gripper", 0.0), "start_gripper"))  # type: ignore[misc,arg-type]
             actions_raw = body["actions"]
             if not isinstance(actions_raw, list):
                 raise TrajectoryError("actions: expected a JSON array")
