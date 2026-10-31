@@ -26,7 +26,9 @@ from .access import authorized, reject
 from .guard import REJECTED, GuardLimits, guard_trajectory
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
 from .confidence import ConfidenceConfigError, ConfidencePolicy, low_confidence_steps
+from .consistency import ConsistencyConfigError, ConsistencyPolicy, inconsistent_steps
 from .hardware import check_engine_status
+from .shadow import ShadowError, ShadowPolicy, append_log, compare_actions
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
 
 
@@ -205,6 +207,8 @@ class Handler(BaseHTTPRequestHandler):
             self._handle_decode(body)
         elif path == "/trajectory/integrate":
             self._handle_integrate(body)
+        elif path == "/shadow/compare" and self.server.shadow.enabled:
+            self._handle_shadow(body)
         else:
             _write_error(self, 404, "not found")
 
@@ -234,6 +238,19 @@ class Handler(BaseHTTPRequestHandler):
             return
         _write_json(self, 200, {"action": list(values)})
 
+    def _handle_shadow(self, body: dict) -> None:
+        # shadow mode: measures the difference between the proposed and the operator's actions; nothing is offered or moved
+        try:
+            result = compare_actions(body.get("proposed"), body.get("operator"))
+            append_log(self.server.shadow, result)
+        except ShadowError as e:
+            _write_error(self, 400, str(e))
+            return
+        except OSError as e:
+            _write_error(self, 500, f"cannot write the shadow log: {e}")
+            return
+        _write_json(self, 200, result)
+
     def _handle_integrate(self, body: dict) -> None:
         try:
             start_values = tuple(_strict_number(v, "start") for v in body["start"])
@@ -244,6 +261,7 @@ class Handler(BaseHTTPRequestHandler):
             actions = [tuple(a) for a in actions_raw]
             poses = integrate_trajectory(start, actions)
             low_steps = low_confidence_steps(body.get("confidences"), len(actions), self.server.confidence)
+            odd_steps = inconsistent_steps(actions, body.get("alternatives"), self.server.consistency)
             instruction_sha256 = body.get("instruction_sha256", "")
             if not isinstance(instruction_sha256, str) or (
                 instruction_sha256 and not re.fullmatch(r"[0-9a-f]{64}", instruction_sha256)
@@ -252,12 +270,16 @@ class Handler(BaseHTTPRequestHandler):
         except KeyError as e:
             _write_error(self, 400, f"missing required field: {e}")
             return
-        except (TokenizationError, TrajectoryError, ConfidenceConfigError, ValueError, TypeError) as e:
+        except (TokenizationError, TrajectoryError, ConfidenceConfigError, ConsistencyConfigError, ValueError, TypeError) as e:
             _write_error(self, 400, str(e))
             return
         if low_steps:
             # the model was not sure of these actions: no trajectory is offered
             _write_json(self, 422, {"error": "the confidence of some actions is below the configured minimum", "minimum": self.server.confidence.minimum, "low_confidence_steps": low_steps})
+            return
+        if odd_steps:
+            # the repeated predictions of the model disagree on these steps: no trajectory is offered
+            _write_json(self, 422, {"error": "the predictions of some actions are not consistent", "predictions": self.server.consistency.predictions, "inconsistent_steps": odd_steps})
             return
         guard_info: dict
         if self.server.guard is not None:
@@ -288,10 +310,16 @@ class VlaEngineServer(ThreadingHTTPServer):
         proposal_signer: tuple[bytes, str, int] | None = None,
         model_version: str = "",
         confidence: ConfidencePolicy | None = None,
+        consistency: ConsistencyPolicy | None = None,
+        shadow: ShadowPolicy | None = None,
     ) -> None:
         super().__init__(address, Handler)
         # the lowest confidence an action may have (confidence.py); off by default
         self.confidence = confidence or ConfidencePolicy()
+        # how many repeated predictions of a step must agree (consistency.py); off by default
+        self.consistency = consistency or ConsistencyPolicy()
+        # shadow mode (shadow.py): compares proposals with the operator's actions; off by default
+        self.shadow = shadow or ShadowPolicy()
         # the model that produces the actions, signed into every proposal when given
         self.model_version = model_version
         # (key, robot_id, validity_ms): with it every proposal is signed for that robot and a short time window

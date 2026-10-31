@@ -5,5 +5,17 @@
   },
   "confidence": {
     "minimum": 0.0
+  },
+  "consistency": {
+    "predictions": 1,
+    "tolerance": {
+      "linear": 0.005,
+      "rotation": 0.01,
+      "gripper": 0.1
+    }
+  },
+  "shadow": {
+    "enabled": false,
+    "log_file": ""
   }
 }

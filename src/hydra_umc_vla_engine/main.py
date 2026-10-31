@@ -29,6 +29,8 @@ from .api import VlaEngineServer
 from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
 from .hardware import EngineMode, check_engine_status
 from .confidence import ConfidenceConfigError, load_confidence_policy
+from .consistency import ConsistencyConfigError, load_consistency_policy
+from .shadow import ShadowError, load_shadow_policy
 from .rotation_policy import RotationConfigError, load_rotation_policy, set_active_policy
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
 
@@ -181,10 +183,12 @@ def _cmd_serve(args: argparse.Namespace) -> int:
             return 2
     try:
         confidence = load_confidence_policy(args.config)
-    except ConfidenceConfigError as exc:
+        consistency = load_consistency_policy(args.config)
+        shadow = load_shadow_policy(args.config)
+    except (ConfidenceConfigError, ConsistencyConfigError, ShadowError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer, model_version=args.model_version.strip(), confidence=confidence)
+    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer, model_version=args.model_version.strip(), confidence=confidence, consistency=consistency, shadow=shadow)
     if guard is None:
         print("[vla-engine] no trajectory guard: trajectories are offered with guard=not_configured (give --guard-file to check them against the limits of the cell)")
     else:

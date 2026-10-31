@@ -199,6 +199,8 @@ $ echo $?
 
 `serve --model-version V` and an `instruction_sha256` (64 hex characters, the SHA-256 of the instruction) in the body of `POST /trajectory/integrate` add `model_version` and `instruction_sha256` to the proposal and to what is signed; `verify_proposal(..., expected_model_version=..., expected_instruction_sha256=...)` then also refuses a proposal of another model or for another instruction.
 
+`configs/vla-engine.json` (`--config FILE` or `HYDRA_UMC_VLA_ENGINE_CONFIG`) also holds two switches that are off by default. `consistency.predictions` N above 1 makes `POST /trajectory/integrate` require `alternatives` (N-1 further action sequences as long as `actions`) and offer no trajectory (HTTP 422, `inconsistent_steps`) when any value differs from `actions` by more than `consistency.tolerance` (`linear` metres, `rotation` radians, `gripper`); a request without them is refused (HTTP 400). `shadow.enabled` turns on `POST /shadow/compare`, which takes `proposed` and `operator` action sequences and answers the difference per step and its mean and maximum per group; `shadow.log_file` appends one summary line per comparison. Neither moves anything.
+
 ## Exit codes
 
 | Code | Meaning |
