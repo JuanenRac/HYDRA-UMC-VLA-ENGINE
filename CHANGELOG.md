@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.0] - Consistent predictions, a shadow mode, a confidence filter, rotation deltas composed as quaternions and property tests
+
 - **Consistent predictions:** with `consistency.predictions` N above 1 in `configs/vla-engine.json` (1 is off, the default), `POST /trajectory/integrate` needs `alternatives`, N-1 further action sequences as long as `actions`, and offers no trajectory (HTTP 422, with the indices of the steps) when any value of an alternative differs from `actions` by more than `consistency.tolerance` (`linear` in metres, `rotation` in radians, `gripper`); a request without the alternatives is refused (HTTP 400) rather than let through.
 
 - **Shadow mode:** with `shadow.enabled` true in `configs/vla-engine.json` (off by default; the route answers 404 while off), `POST /shadow/compare` takes the actions the model proposes and those the operator gave and answers the difference per step and its mean and maximum for the linear, rotation and gripper values; `shadow.log_file` appends one summary line per comparison for offline judging of a model. It moves nothing and authorizes nothing.
