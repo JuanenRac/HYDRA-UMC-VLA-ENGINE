@@ -80,6 +80,8 @@ L'objectif est que le robot comprenne des ordres comme « prends le composant bl
   conserver ses propres copies.
 * 📦 **Versionnage compteur kilométrique :** La version de `pyproject.toml` n'est augmentée que par la commande `bump` explicite (`python tools/hydra_project_tool.py bump`, qui exécute `bump_version.py`) - compiler ne la change jamais.
 
+* 🧪 **Prédictions cohérentes, mode fantôme, filtre de confiance et rotations exactes (tout est désactivé par défaut, rien ne déplace quoi que ce soit) :** dans `configs/vla-engine.json`, `consistency.predictions` supérieur à 1 oblige `POST /trajectory/integrate` à recevoir N-1 `alternatives` et à n'offrir aucune trajectoire (HTTP 422) quand une valeur s'écarte de `actions` de plus de `consistency.tolerance` ; `shadow.enabled` active `POST /shadow/compare`, qui répond la différence entre les actions proposées par un modèle et celles données par l'opérateur (par pas, moyenne et maximum) ; `confidence.minimum` supérieur à 0 exige une valeur de `confidences` par action et refuse une trajectoire contenant une action douteuse. Les trois valeurs de rotation d'une action forment un vecteur de rotation composé en quaternions, juste pour les grands angles et près de 90 degrés de tangage. Voir `docs/CLI_REFERENCE.md`.
+
 ## 🧩 Rôle dans HYDRA-UMC
 
 **HYDRA-UMC-VLA-ENGINE** contient les parties d'un moteur vision-langage-action qui n'ont pas besoin d'un modèle : convertir des actions en jetons discrets et inversement, intégrer les pas prédits en une trajectoire, et une garde qui rogne ou rejette une trajectoire selon le volume de travail, les limites de vitesse, les zones de sécurité et la plage de la pince. Aucun modèle ne tourne encore ; la frontière Hailo-10 indique seulement ce qui est présent.

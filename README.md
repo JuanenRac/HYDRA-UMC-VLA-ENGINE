@@ -78,6 +78,8 @@ The goal is to let the robot understand commands such as "pick the blue componen
   (alongside Voice-UI, Semantic-Planner and Docs-QA), sharing its parent's
   HydraOS image and model weights instead of keeping its own copies.
 
+* 🧪 **Consistent predictions, shadow mode, confidence filter and exact rotations (all off by default, none moves anything):** in `configs/vla-engine.json`, `consistency.predictions` above 1 makes `POST /trajectory/integrate` require N-1 `alternatives` and offer no trajectory (HTTP 422) when a value differs from `actions` by more than `consistency.tolerance`; `shadow.enabled` turns on `POST /shadow/compare`, which answers the difference between the actions a model proposes and those the operator gave (per step, mean and maximum); `confidence.minimum` above 0 needs one `confidences` value per action and refuses a trajectory with a doubtful action. The three rotation values of an action are a rotation vector composed as quaternions, right for large angles and near pitch 90 degrees. See `docs/CLI_REFERENCE.md`.
+
 ## 🧩 Role in HYDRA-UMC
 
 **HYDRA-UMC-VLA-ENGINE** holds the parts of a vision-language-action engine that do not need a model: turning actions into discrete tokens and back, integrating the predicted steps into a trajectory, and a guard that clamps or rejects a trajectory against the work volume, speed limits, safety zones and the gripper range. No model runs yet; the Hailo-10 boundary only reports what is present.

@@ -76,6 +76,8 @@ GPL-3.0-or-later - see LICENSE
 * 👨‍👩‍👧 **认知 AI 节点子项目：** 作为
   [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) 下 4 个同级服务之一运行（与 Voice-UI、Semantic-Planner 和 Docs-QA 并列），共享父项目的 HydraOS 镜像和模型权重，而非各自保留独立副本。
 
+* 🧪 **一致预测、影子模式、置信度过滤和精确旋转（全部默认关闭，不会移动任何东西）：** 在 `configs/vla-engine.json` 中，`consistency.predictions` 大于 1 时，`POST /trajectory/integrate` 需要 N-1 个 `alternatives`，并在某个值与 `actions` 相差超过 `consistency.tolerance` 时不提供轨迹（HTTP 422）；`shadow.enabled` 启用 `POST /shadow/compare`，返回模型提出的动作与操作员给出的动作之间的差异（逐步、平均和最大）；`confidence.minimum` 大于 0 时，每个动作都需要一个 `confidences` 值，并拒绝含有可疑动作的轨迹。动作的三个旋转值是一个以四元数合成的旋转向量，在大角度和接近 90 度俯仰时依然正确。参见 `docs/CLI_REFERENCE.md`。
+
 ## 🧩 在 HYDRA-UMC 中的角色
 
 **HYDRA-UMC-VLA-ENGINE** 包含视觉-语言-动作引擎中不需要模型的部分：把动作转换为离散令牌并还原，把预测的步骤积分成轨迹，以及根据工作空间、速度限制、安全区域和夹爪范围裁剪或拒绝轨迹的守卫。目前还没有模型运行；Hailo-10 边界只报告现有的东西。

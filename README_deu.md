@@ -79,6 +79,8 @@ Ziel ist, dass der Roboter Befehle wie „nimm das blaue Bauteil und lege es auf
   HydraOS-Image und die Modellgewichte des Elternteils, statt eigene
   Kopien vorzuhalten.
 
+* 🧪 **Konsistente Vorhersagen, Schattenmodus, Konfidenzfilter und exakte Rotationen (alles standardmäßig aus, nichts bewegt etwas):** in `configs/vla-engine.json` verlangt `consistency.predictions` über 1, dass `POST /trajectory/integrate` N-1 `alternatives` bekommt und keine Trajektorie anbietet (HTTP 422), wenn ein Wert um mehr als `consistency.tolerance` von `actions` abweicht; `shadow.enabled` schaltet `POST /shadow/compare` ein, das den Unterschied zwischen den vom Modell vorgeschlagenen und den vom Bediener gegebenen Aktionen beantwortet (je Schritt, Mittel und Maximum); `confidence.minimum` über 0 verlangt einen `confidences`-Wert je Aktion und weist eine Trajektorie mit zweifelhafter Aktion ab. Die drei Rotationswerte einer Aktion sind ein Rotationsvektor, als Quaternionen zusammengesetzt, richtig bei großen Winkeln und nahe 90 Grad Nicken. Siehe `docs/CLI_REFERENCE.md`.
+
 ## 🧩 Rolle in HYDRA-UMC
 
 **HYDRA-UMC-VLA-ENGINE** enthält die Teile einer Vision-Language-Action-Engine, die kein Modell brauchen: Aktionen in diskrete Tokens und zurück umwandeln, die vorhergesagten Schritte zu einer Trajektorie integrieren und eine Schutzprüfung, die eine Trajektorie anhand von Arbeitsvolumen, Geschwindigkeitsgrenzen, Sicherheitszonen und Greiferbereich beschneidet oder ablehnt. Noch läuft kein Modell; die Hailo-10-Grenze meldet nur, was vorhanden ist.

@@ -76,6 +76,8 @@ GPL-3.0-or-later - see LICENSE
 * 👨‍👩‍👧 **認知 AI ノードの子プロジェクト：**
   [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) の下で 4 つの兄弟サービスの 1 つとして動作します（Voice-UI、Semantic-Planner、Docs-QA と並んで）。独自のコピーを保持するのではなく、親プロジェクトの HydraOS イメージとモデルの重みを共有します。
 
+* 🧪 **一貫した予測、シャドウモード、信頼度フィルター、正確な回転（すべて既定でオフ、何も動かしません）：** `configs/vla-engine.json` で `consistency.predictions` を 1 より大きくすると、`POST /trajectory/integrate` は N-1 個の `alternatives` を必要とし、ある値が `actions` から `consistency.tolerance` を超えて違うと軌道を提供しません（HTTP 422）。`shadow.enabled` は `POST /shadow/compare` を有効にし、モデルが提案した動作とオペレーターが与えた動作の差（ステップごと、平均、最大）を返します。`confidence.minimum` を 0 より大きくすると、動作ごとに `confidences` の値が必要になり、疑わしい動作を含む軌道を拒否します。動作の 3 つの回転値は、クォータニオンで合成される回転ベクトルで、大きな角度やピッチ 90 度付近でも正確です。`docs/CLI_REFERENCE.md` を参照してください。
+
 ## 🧩 HYDRA-UMC での役割
 
 **HYDRA-UMC-VLA-ENGINE** は、モデルを必要としない視覚・言語・行動エンジンの部分を収めています。行動と離散トークンの相互変換、予測ステップの軌道への積分、作業空間・速度制限・安全ゾーン・グリッパー範囲に対して軌道を切り詰めるか拒否するガードです。モデルはまだ動かず、Hailo-10 との境界は存在するものを報告するだけです。
