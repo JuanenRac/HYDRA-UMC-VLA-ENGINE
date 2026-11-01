@@ -21,6 +21,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from . import __version__
+from .service_metrics import MetricsHandlerMixin
 from .proposal_signing import sign_proposal
 from .access import authorized, reject
 from .guard import REJECTED, GuardLimits, guard_trajectory
@@ -145,8 +147,10 @@ def _strict_int(value: object, label: str) -> int:
 HEALTH_PATH = "/health"
 
 
-class Handler(BaseHTTPRequestHandler):
+class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
     server: "VlaEngineServer"
+    metrics_service = "hydra-umc-vla-engine"
+    metrics_version = __version__
 
     # Seconds a client may stay silent on its connection before it is dropped,
     # so one that connects and sends nothing cannot hold a handler thread.
@@ -156,6 +160,8 @@ class Handler(BaseHTTPRequestHandler):
         pass  # quiet by default, same reasoning as this family's other api.py files
 
     def do_GET(self) -> None:  # noqa: N802
+        if self.serve_metrics(authorized=authorized(self, self.server.token)):
+            return
         # the health path of the manifest stays open so the service registry can probe the service without the token
         if urlparse(self.path).path != HEALTH_PATH and not authorized(self, self.server.token):
             reject(self)

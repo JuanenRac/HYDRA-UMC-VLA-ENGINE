@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **`GET /metrics` in the text format of Prometheus:** the version, the uptime, the responses by class of status (2xx to 5xx) and the health, the aggregate of the checks of the service; only numbers about the service, never a path, an address, a token or a body. Behind the bearer token when the service has one. The code is the canonical `service_metrics.py` of HYDRA-UMC-SDK, copied byte for byte. 4 tests against a real server.
+
 ## [0.2.0] - Consistent predictions, a shadow mode, a confidence filter, rotation deltas composed as quaternions and property tests
 
 - **Consistent predictions:** with `consistency.predictions` N above 1 in `configs/vla-engine.json` (1 is off, the default), `POST /trajectory/integrate` needs `alternatives`, N-1 further action sequences as long as `actions`, and offers no trajectory (HTTP 422, with the indices of the steps) when any value of an alternative differs from `actions` by more than `consistency.tolerance` (`linear` in metres, `rotation` in radians, `gripper`); a request without the alternatives is refused (HTTP 400) rather than let through.
