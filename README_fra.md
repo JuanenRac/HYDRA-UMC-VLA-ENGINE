@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-221%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-269%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.2.0` |
 | Maturité | Fonctionnel |
-| Tests | 221 (`python -m pytest -q tests`) |
+| Tests | 269 (`python -m pytest -q tests`) |
 | Technologie | Python / Vision-Language-Action model |
 | Cible | Le Raspberry Pi CM5 d'une cellule HYDRA-UMC |
 | Sur matériel réel | Pas encore : aucune exécution sur du matériel réel n'est consignée pour cette version |
@@ -51,7 +51,7 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 | Domaine | État | Ce que cela veut dire ici |
 |---|---|---|
 | Logiciel | 🟡 | Fonctionne pour son usage principal ; la vérification d'honnêteté ci-dessus liste ce qui manque encore |
-| Tests | 🟢 | 221 tests automatiques, exécutés à chaque modification |
+| Tests | 🟢 | 269 tests automatiques, exécutés à chaque modification |
 | Matériel réel | 🔴 | Pas encore : aucune exécution sur du matériel réel n'est consignée pour cette version |
 | Interface et protocoles | 🟡 | Les routes ou les messages proposés sont documentés et testés avec un client ; tous les clients ne les ont pas encore utilisés |
 | Intégration | 🟠 | Il fonctionne avec les autres services sur le banc d'essai CM5 et ses messages suivent les contrats partagés du SDK |
@@ -88,6 +88,9 @@ L'objectif est que le robot comprenne des ordres comme « prends le composant bl
 * 📦 **Versionnage compteur kilométrique :** La version de `pyproject.toml` n'est augmentée que par la commande `bump` explicite (`python tools/hydra_project_tool.py bump`, qui exécute `bump_version.py`) - compiler ne la change jamais.
 
 * 🧪 **Prédictions cohérentes, mode fantôme, filtre de confiance et rotations exactes (tout est désactivé par défaut, rien ne déplace quoi que ce soit) :** dans `configs/vla-engine.json`, `consistency.predictions` supérieur à 1 oblige `POST /trajectory/integrate` à recevoir N-1 `alternatives` et à n'offrir aucune trajectoire (HTTP 422) quand une valeur s'écarte de `actions` de plus de `consistency.tolerance` ; `shadow.enabled` active `POST /shadow/compare`, qui répond la différence entre les actions proposées par un modèle et celles données par l'opérateur (par pas, moyenne et maximum) ; `confidence.minimum` supérieur à 0 exige une valeur de `confidences` par action et refuse une trajectoire contenant une action douteuse. Les trois valeurs de rotation d'une action forment un vecteur de rotation composé en quaternions, juste pour les grands angles et près de 90 degrés de tangage. Voir `docs/CLI_REFERENCE.md`.
+* 🦾 **Vérification cinématique avant une proposition (désactivée par défaut) :** la section `kinematics` du fichier de configuration fait essayer chaque pose d'une trajectoire avec la commande `ik` de PHYSICS-REPLICA (un processus enfant, chaque pose partant des articulations qui ont atteint la précédente) ; une pose inatteignable, ou une articulation qui tournerait trop entre deux poses, donne `422`, et une vérification qui ne peut pas s'exécuter donne `503` sauf si le fichier dit autrement. Position seulement : l'orientation et les collisions ne sont pas vérifiées. Testé avec un programme de remplacement.
+* ✋ **Confirmation d'une proposition par une personne, en deux étapes (désactivée par défaut) :** avec la section `confirmation`, chaque proposition attend ; l'appareil de l'opérateur demande un résumé et un jeton (`prepare`) et renvoie le jeton (`confirm`) pour recevoir une approbation signée pour cette trajectoire, ce robot et un temps court ; le jeton est accepté une fois, pour l'opérateur qui l'a préparé. Le relais dans le serveur et les écrans de la Watch et d'Android restent à faire.
+* 🧵 **Aides HTTP partagées et limite de requêtes simultanées :** le corps de la requête, les réponses et le serveur viennent du `http_common.py` canonique du SDK ; `--max-threads` borne les requêtes traitées en même temps et une de plus reçoit `503` aussitôt.
 
 ## 🧩 Rôle dans HYDRA-UMC
 
@@ -188,7 +191,7 @@ Nécessite Python 3.10 ou plus récent.
 
 ## 🧪 Tests
 
-221 tests automatiques s'exécutent avec `python -m pytest -q tests`. Ils n'ont besoin ni de matériel ni de rien en dehors de cette machine.
+269 tests automatiques s'exécutent avec `python -m pytest -q tests`. Ils n'ont besoin ni de matériel ni de rien en dehors de cette machine.
 
 La CI exécute `HYDRA_UMC_CI=1 python tools/ci_validate.py`, qui vérifie le manifeste, les documents, les huit README et les images.
 
@@ -313,7 +316,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### État Actuel et Prochaines Étapes
 
-**Réel aujourd'hui :** l'encodage/décodage des jetons d'action et la génération de trajectoire (`action_tokens.py`, `trajectory.py`) - les étapes « Jetons d'action » et « Générateur de trajectoire » du diagramme de flux ci-dessus - plus une véritable limite d'intégration HailoRT (`hailo_runtime.py`) prête pour un vrai modèle `.hef` et un module Hailo-10 dès qu'ils existeront. 221 tests et un CLI réel.
+**Réel aujourd'hui :** l'encodage/décodage des jetons d'action et la génération de trajectoire (`action_tokens.py`, `trajectory.py`) - les étapes « Jetons d'action » et « Générateur de trajectoire » du diagramme de flux ci-dessus - plus une véritable limite d'intégration HailoRT (`hailo_runtime.py`) prête pour un vrai modèle `.hef` et un module Hailo-10 dès qu'ils existeront. 269 tests et un CLI réel.
 
 **Encore à venir, et bloqué par du vrai matériel/un vrai modèle :** exécuter réellement l'inférence nécessite un vrai modèle VLA `.hef` compilé (OpenVLA/RT-2 quantifié pour Hailo-10 - aucun modèle spécifique choisi pour l'instant) et un module Hailo-10 physique branché, deux véritables blocages inévitables que `hailo_runtime.py` ne peut pas lever seul - mais charger et décoder un modèle, une fois qu'il existera, n'est plus du code non écrit.
 

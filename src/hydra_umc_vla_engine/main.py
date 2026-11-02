@@ -29,7 +29,9 @@ from .api import VlaEngineServer
 from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
 from .hardware import EngineMode, check_engine_status
 from .confidence import ConfidenceConfigError, load_confidence_policy
+from .confirmation import ConfirmationConfigError, ConfirmationStore, load_confirmation_policy
 from .consistency import ConsistencyConfigError, load_consistency_policy
+from .kinematic_check import KinematicsConfigError, load_kinematics_policy
 from .shadow import ShadowError, load_shadow_policy
 from .rotation_policy import RotationConfigError, load_rotation_policy, set_active_policy
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
@@ -185,10 +187,27 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         confidence = load_confidence_policy(args.config)
         consistency = load_consistency_policy(args.config)
         shadow = load_shadow_policy(args.config)
-    except (ConfidenceConfigError, ConsistencyConfigError, ShadowError) as exc:
+        kinematics = load_kinematics_policy(args.config)
+        confirmation = load_confirmation_policy(args.config)
+    except (ConfidenceConfigError, ConsistencyConfigError, ShadowError, KinematicsConfigError, ConfirmationConfigError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer, model_version=args.model_version.strip(), confidence=confidence, consistency=consistency, shadow=shadow)
+    confirmations = None
+    if confirmation.enabled:
+        if signer is None:
+            print("error: the confirmation of proposals needs --proposal-key-file and --robot-id: the approval is signed with that key for that robot", file=sys.stderr)
+            return 2
+        confirmations = ConfirmationStore(confirmation, signer[0], signer[1])
+    try:
+        server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer, model_version=args.model_version.strip(), confidence=confidence,
+                                 consistency=consistency, shadow=shadow, kinematics=kinematics, confirmations=confirmations, max_threads=args.max_threads)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    if kinematics.enabled:
+        print(f"[vla-engine] kinematic check on: every pose is tried with the kinematics of PHYSICS-REPLICA on {kinematics.target_joint} ({'no trajectory without the check' if kinematics.fail_closed else 'a failing check is reported'})")
+    if confirmations is not None:
+        print("[vla-engine] CONFIRMATION ON: every proposal waits for a person: GET /confirmations/pending, POST /confirmations/<id>/prepare|confirm|reject")
     if guard is None:
         print("[vla-engine] no trajectory guard: trajectories are offered with guard=not_configured (give --guard-file to check them against the limits of the cell)")
     else:
@@ -266,6 +285,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=_DEFAULT_WORKSPACE,
         help="Default workspace for GET /status when it is not overridden per-request.",
     )
+    serve.add_argument("--max-threads", type=int, default=32, dest="max_threads", help="requests handled at the same time, 1 to 1024; one more answers 503 at once (default 32)")
     serve.add_argument("--guard-file", default=None, dest="guard_file", help="JSON file with the work volume, step limits and zones every trajectory is checked against (or HYDRA_UMC_VLA_GUARD_FILE)")
     serve.add_argument("--require-guard", action="store_true", dest="require_guard", help="Offer no trajectory at all unless a guard file is loaded")
     serve.add_argument("--config", default=None, help="Configuration file with how the rotation deltas are integrated (default: the file named by HYDRA_UMC_VLA_ENGINE_CONFIG, else quaternion composition in the base frame)")

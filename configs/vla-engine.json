@@ -17,5 +17,26 @@
   "shadow": {
     "enabled": false,
     "log_file": ""
+  },
+  "kinematics": {
+    "enabled": false,
+    "command": ["physics-replica"],
+    "urdf": "robot.urdf",
+    "target_joint": "tool0",
+    "initial_joints": {},
+    "origin": [0.0, 0.0, 0.0],
+    "tolerance_m": 0.002,
+    "max_iterations": 200,
+    "max_joint_step": 0.5,
+    "timeout_seconds": 10,
+    "max_waypoints": 64,
+    "fail_closed": true
+  },
+  "confirmation": {
+    "enabled": false,
+    "ttl_seconds": 60,
+    "token_seconds": 30,
+    "max_pending": 16,
+    "approval_validity_ms": 10000
   }
 }

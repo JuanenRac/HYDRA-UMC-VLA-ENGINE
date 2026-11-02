@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-221%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-269%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Versão | `0.2.0` |
 | Maturidade | Funcional |
-| Testes | 221 (`python -m pytest -q tests`) |
+| Testes | 269 (`python -m pytest -q tests`) |
 | Tecnologia | Python / Vision-Language-Action model |
 | Destino | O Raspberry Pi CM5 de uma célula HYDRA-UMC |
 | Em hardware real | Ainda não: não há registo de execução em hardware real para esta versão |
@@ -51,7 +51,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 | Área | Estado | O que significa aqui |
 |---|---|---|
 | Software | 🟡 | Funciona para o seu propósito principal; a verificação de honestidade acima lista o que ainda falta |
-| Testes | 🟢 | 221 testes automáticos, executados a cada alteração |
+| Testes | 🟢 | 269 testes automáticos, executados a cada alteração |
 | Hardware real | 🔴 | Ainda não: não há registo de execução em hardware real para esta versão |
 | Interface e protocolos | 🟡 | As rotas ou mensagens que oferece estão documentadas e testadas com um cliente; ainda nem todos os clientes as usaram |
 | Integração | 🟠 | Funciona em conjunto com os outros serviços na bancada de testes da CM5 e as suas mensagens seguem os contratos partilhados do SDK |
@@ -83,6 +83,9 @@ O objetivo é que o robô perceba ordens como «pega no componente azul e coloca
 * 👨‍👩‍👧 **Filho do Cognitive AI Node:** Corre como um de quatro serviços irmãos sob o [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) (ao lado do Voice-UI, do Semantic-Planner e do Docs-QA), partilhando a imagem HydraOS e os pesos do modelo do seu pai em vez de manter cópias próprias.
 
 * 🧪 **Previsões consistentes, modo sombra, filtro de confiança e rotações exatas (tudo desativado por omissão, nada move nada):** em `configs/vla-engine.json`, `consistency.predictions` acima de 1 faz com que `POST /trajectory/integrate` exija N-1 `alternatives` e não ofereça nenhuma trajetória (HTTP 422) quando um valor difere de `actions` em mais de `consistency.tolerance`; `shadow.enabled` ativa `POST /shadow/compare`, que responde a diferença entre as ações que um modelo propõe e as dadas pelo operador (por passo, média e máximo); `confidence.minimum` acima de 0 exige um valor de `confidences` por ação e recusa uma trajetória com uma ação duvidosa. Os três valores de rotação de uma ação são um vetor de rotação composto como quaterniões, correto com ângulos grandes e perto de 90 graus de inclinação. Ver `docs/CLI_REFERENCE.md`.
+* 🦾 **Verificação cinemática antes de uma proposta (desligada por omissão):** a secção `kinematics` do ficheiro de configuração faz com que cada pose de uma trajetória seja experimentada com o comando `ik` do PHYSICS-REPLICA (um processo filho, cada pose parte das juntas que alcançaram a anterior); uma pose inalcançável, ou uma junta que rodaria demasiado entre duas poses, dá `422`, e uma verificação que não pode correr dá `503`, salvo se o ficheiro disser outra coisa. Só a posição: a orientação e as colisões não são verificadas. Testado com um programa substituto.
+* ✋ **Confirmação de uma proposta por uma pessoa, em dois passos (desligada por omissão):** com a secção `confirmation`, cada proposta espera; o dispositivo do operador pede um resumo e um token (`prepare`) e devolve o token (`confirm`) para receber uma aprovação assinada para essa trajetória, esse robô e um tempo curto; o token é aceite uma vez, para o operador que o preparou. O reencaminhamento no servidor e os ecrãs do Watch e do Android ainda estão por fazer.
+* 🧵 **Ajudas HTTP partilhadas e um limite de pedidos simultâneos:** o corpo do pedido, as respostas e o servidor vêm do `http_common.py` canónico do SDK; `--max-threads` limita os pedidos tratados ao mesmo tempo e mais um recebe `503` de imediato.
 
 ## 🧩 Papel no HYDRA-UMC
 
@@ -139,7 +142,7 @@ Requer Python 3.10 ou superior.
 
 ## 🧪 Testes
 
-221 testes automáticos correm com `python -m pytest -q tests`. Não precisam de hardware nem de nada fora desta máquina.
+269 testes automáticos correm com `python -m pytest -q tests`. Não precisam de hardware nem de nada fora desta máquina.
 
 A CI executa `HYDRA_UMC_CI=1 python tools/ci_validate.py`, que verifica o manifesto, os documentos, os oito README e as imagens.
 
@@ -249,7 +252,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### Estado atual e próximos passos
 
-**Real hoje:** codificação/descodificação de tokens de ação e geração de trajetórias (`action_tokens.py`, `trajectory.py`) - os passos "Action Tokens" e "Trajectory Generator" do diagrama de fluxo acima - mais uma fronteira real de integração com o HailoRT (`hailo_runtime.py`) pronta para um `.hef` real e um módulo Hailo-10 no momento em que existirem. 221 testes e uma CLI real.
+**Real hoje:** codificação/descodificação de tokens de ação e geração de trajetórias (`action_tokens.py`, `trajectory.py`) - os passos "Action Tokens" e "Trajectory Generator" do diagrama de fluxo acima - mais uma fronteira real de integração com o HailoRT (`hailo_runtime.py`) pronta para um `.hef` real e um módulo Hailo-10 no momento em que existirem. 269 testes e uma CLI real.
 
 **Ainda por fazer, e bloqueado por hardware real/um modelo real:** executar inferência precisa de um modelo VLA `.hef` compilado real (OpenVLA/RT-2 quantizado para Hailo-10 - ainda sem modelo concreto escolhido) e de um módulo Hailo-10 físico ligado, dois bloqueios reais e inevitáveis que o `hailo_runtime.py` não consegue remover sozinho - mas carregar e descodificar um, quando existir, já não é código por escrever.
 

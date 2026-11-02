@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-221%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-269%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | バージョン | `0.2.0` |
 | 成熟度 | 機能する |
-| テスト | 221 (`python -m pytest -q tests`) |
+| テスト | 269 (`python -m pytest -q tests`) |
 | 技術 | Python / Vision-Language-Action model |
 | 対象 | HYDRA-UMC セルの Raspberry Pi CM5 |
 | 実機での確認 | まだです：このバージョンについて実機での動作記録はありません |
@@ -51,7 +51,7 @@ GPL-3.0-or-later - see LICENSE
 | 領域 | 状態 | ここでの意味 |
 |---|---|---|
 | ソフトウェア | 🟡 | 主な目的では動作します。足りない点は上の正直さの確認に書かれています |
-| テスト | 🟢 | 自動テスト 221 件。変更のたびに実行されます |
+| テスト | 🟢 | 自動テスト 269 件。変更のたびに実行されます |
 | 実機 | 🔴 | まだです：このバージョンについて実機での動作記録はありません |
 | インターフェースとプロトコル | 🟡 | 提供するルートやメッセージは文書化され、クライアントで試験済みです。すべてのクライアントがまだ使ったわけではありません |
 | 連携 | 🟠 | CM5 のテストベンチで他のサービスと一緒に動作し、メッセージは SDK の共通契約に従います |
@@ -84,6 +84,9 @@ GPL-3.0-or-later - see LICENSE
   [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) の下で 4 つの兄弟サービスの 1 つとして動作します（Voice-UI、Semantic-Planner、Docs-QA と並んで）。独自のコピーを保持するのではなく、親プロジェクトの HydraOS イメージとモデルの重みを共有します。
 
 * 🧪 **一貫した予測、シャドウモード、信頼度フィルター、正確な回転（すべて既定でオフ、何も動かしません）：** `configs/vla-engine.json` で `consistency.predictions` を 1 より大きくすると、`POST /trajectory/integrate` は N-1 個の `alternatives` を必要とし、ある値が `actions` から `consistency.tolerance` を超えて違うと軌道を提供しません（HTTP 422）。`shadow.enabled` は `POST /shadow/compare` を有効にし、モデルが提案した動作とオペレーターが与えた動作の差（ステップごと、平均、最大）を返します。`confidence.minimum` を 0 より大きくすると、動作ごとに `confidences` の値が必要になり、疑わしい動作を含む軌道を拒否します。動作の 3 つの回転値は、クォータニオンで合成される回転ベクトルで、大きな角度やピッチ 90 度付近でも正確です。`docs/CLI_REFERENCE.md` を参照してください。
+* 🦾 **提案の前の運動学チェック（既定でオフ）：** 設定ファイルの `kinematics` セクションにより、軌道の各ポーズを PHYSICS-REPLICA の `ik` コマンド（子プロセス。各ポーズは直前のポーズに到達した関節から開始）で試します。到達できないポーズや、2 つのポーズの間で大きく回りすぎる関節は `422`、チェックを実行できない場合はファイルに別の指定がない限り `503` です。位置のみで、姿勢と衝突はチェックしません。代替プログラムでテスト済み。
+* ✋ **人による提案の 2 段階確認（既定でオフ）：** `confirmation` セクションを有効にすると、すべての提案が待機します。オペレーターの端末が概要とトークンを要求（`prepare`）し、トークンを返送（`confirm`）して、その軌道・そのロボット・短い時間に対して署名された承認を受け取ります。トークンは一度だけ、準備したオペレーターに対して有効です。サーバー側の中継と Watch・Android の画面は未実装です。
+* 🧵 **共通の HTTP ヘルパーと同時リクエストの上限：** リクエスト本文、応答、サーバーは SDK の正規の `http_common.py` を使用します。`--max-threads` で同時処理数を制限し、超過分には即座に `503` を返します。
 
 ## 🧩 HYDRA-UMC での役割
 
@@ -141,7 +144,7 @@ Python 3.10 以上が必要です。
 
 ## 🧪 テスト
 
-`python -m pytest -q tests` で自動テスト 221 件を実行します。 ハードウェアも、このマシンの外にあるものも必要ありません。
+`python -m pytest -q tests` で自動テスト 269 件を実行します。 ハードウェアも、このマシンの外にあるものも必要ありません。
 
 CI は `HYDRA_UMC_CI=1 python tools/ci_validate.py` を実行し、マニフェスト、文書、8 つの README、図を検査します。
 

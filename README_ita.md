@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-221%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-269%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Versione | `0.2.0` |
 | Maturità | Funzionale |
-| Test | 221 (`python -m pytest -q tests`) |
+| Test | 269 (`python -m pytest -q tests`) |
 | Tecnologia | Python / Vision-Language-Action model |
 | Destinazione | Il Raspberry Pi CM5 di una cella HYDRA-UMC |
 | Su hardware reale | Non ancora: per questa versione non risulta alcuna esecuzione su hardware reale |
@@ -51,7 +51,7 @@ Ogni riga è una parte di questo repository e il semaforo dice a che punto è og
 | Area | Stato | Cosa significa qui |
 |---|---|---|
 | Software | 🟡 | Funziona per il suo scopo principale; la verifica di onestà qui sopra elenca ciò che manca ancora |
-| Test | 🟢 | 221 test automatici, eseguiti a ogni modifica |
+| Test | 🟢 | 269 test automatici, eseguiti a ogni modifica |
 | Hardware reale | 🔴 | Non ancora: per questa versione non risulta alcuna esecuzione su hardware reale |
 | Interfaccia e protocolli | 🟡 | Le rotte o i messaggi offerti sono documentati e provati con un client; non tutti i client li hanno ancora usati |
 | Integrazione | 🟠 | Funziona insieme agli altri servizi sul banco prova CM5 e i suoi messaggi seguono i contratti condivisi dell'SDK |
@@ -88,6 +88,9 @@ L'obiettivo è che il robot comprenda comandi come «prendi il componente blu e 
 * 📦 **Versionamento Contachilometri:** La versione di `pyproject.toml` viene alzata solo dal comando `bump` esplicito (`python tools/hydra_project_tool.py bump`, che esegue `bump_version.py`) - compilare non la cambia mai.
 
 * 🧪 **Previsioni coerenti, modalità ombra, filtro di confidenza e rotazioni esatte (tutto disattivato per impostazione predefinita, nulla muove nulla):** in `configs/vla-engine.json`, `consistency.predictions` maggiore di 1 fa sì che `POST /trajectory/integrate` richieda N-1 `alternatives` e non offra alcuna traiettoria (HTTP 422) quando un valore differisce da `actions` di più di `consistency.tolerance`; `shadow.enabled` attiva `POST /shadow/compare`, che risponde la differenza tra le azioni proposte da un modello e quelle date dall'operatore (per passo, media e massimo); `confidence.minimum` maggiore di 0 richiede un valore di `confidences` per azione e rifiuta una traiettoria con un'azione dubbia. I tre valori di rotazione di un'azione sono un vettore di rotazione composto come quaternioni, corretto con angoli grandi e vicino a 90 gradi di beccheggio. Vedi `docs/CLI_REFERENCE.md`.
+* 🦾 **Verifica cinematica prima di una proposta (spenta di default):** la sezione `kinematics` del file di configurazione fa provare ogni posa di una traiettoria con il comando `ik` di PHYSICS-REPLICA (un processo figlio, ogni posa parte dai giunti che hanno raggiunto la precedente); una posa irraggiungibile, o un giunto che ruoterebbe troppo tra due pose, dà `422`, e una verifica che non può partire dà `503` salvo diversa indicazione del file. Solo la posizione: orientamento e collisioni non sono verificati. Provato con un programma sostitutivo.
+* ✋ **Conferma di una proposta da parte di una persona, in due passi (spenta di default):** con la sezione `confirmation`, ogni proposta attende; il dispositivo dell'operatore chiede un riepilogo e un token (`prepare`) e rimanda il token (`confirm`) per ricevere un'approvazione firmata per quella traiettoria, quel robot e un tempo breve; il token è accettato una volta, per l'operatore che l'ha preparato. L'inoltro nel server e le schermate di Watch e Android sono ancora da fare.
+* 🧵 **Aiuti HTTP condivisi e un limite alle richieste simultanee:** il corpo della richiesta, le risposte e il server vengono dal `http_common.py` canonico dell'SDK; `--max-threads` limita le richieste gestite insieme e una in più riceve subito `503`.
 
 ## 🧩 Ruolo in HYDRA-UMC
 
@@ -187,7 +190,7 @@ Richiede Python 3.10 o successivo.
 
 ## 🧪 Test
 
-221 test automatici si eseguono con `python -m pytest -q tests`. Non richiedono hardware né nulla al di fuori di questa macchina.
+269 test automatici si eseguono con `python -m pytest -q tests`. Non richiedono hardware né nulla al di fuori di questa macchina.
 
 La CI esegue `HYDRA_UMC_CI=1 python tools/ci_validate.py`, che controlla il manifesto, i documenti, gli otto README e le immagini.
 
@@ -312,7 +315,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### Stato Attuale e Prossimi Passi
 
-**Reale oggi:** la codifica/decodifica dei token di azione e la generazione di traiettoria (`action_tokens.py`, `trajectory.py`) - i passaggi "Token di azione" e "Generatore di traiettoria" del diagramma di flusso sopra - più un vero limite di integrazione HailoRT (`hailo_runtime.py`) pronto per un vero modello `.hef` e un modulo Hailo-10 non appena esisteranno. 221 test e una CLI reale.
+**Reale oggi:** la codifica/decodifica dei token di azione e la generazione di traiettoria (`action_tokens.py`, `trajectory.py`) - i passaggi "Token di azione" e "Generatore di traiettoria" del diagramma di flusso sopra - più un vero limite di integrazione HailoRT (`hailo_runtime.py`) pronto per un vero modello `.hef` e un modulo Hailo-10 non appena esisteranno. 269 test e una CLI reale.
 
 **Ancora da fare, e bloccato da vero hardware/un vero modello:** eseguire davvero l'inferenza richiede un vero modello VLA `.hef` realmente compilato (OpenVLA/RT-2 quantizzato per Hailo-10 - nessun modello specifico ancora scelto) e un modulo Hailo-10 fisico collegato, entrambi blocchi reali e inevitabili che `hailo_runtime.py` non può rimuovere da solo - ma caricare e decodificare un modello, una volta che esisterà, non è più codice non scritto.
 

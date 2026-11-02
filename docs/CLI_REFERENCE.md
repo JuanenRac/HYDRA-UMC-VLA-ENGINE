@@ -203,6 +203,32 @@ $ echo $?
 
 **Rotation values.** The three rotation values of an action (`droll`, `dpitch`, `dyaw`) are a rotation vector (axis times angle, radians) that turns the tool exactly: the deltas are composed as quaternions, so the order of turns counts and the result is right for large angles and near pitch 90 degrees. A pose keeps its orientation as a unit quaternion (`Pose.orientation`; the angles are derived from it), and the guard cuts a turn that is too large.
 
+## Kinematic check and confirmation of proposals (`serve`, off by default)
+
+Both are sections of the configuration file (`--config`, or the file named by `HYDRA_UMC_VLA_ENGINE_CONFIG`; `configs/vla-engine.json` has them, off). Without them the engine behaves as before.
+
+`kinematics` makes `POST /trajectory/integrate` try every pose of the trajectory with the `ik` command of HYDRA-UMC-PHYSICS-REPLICA before the proposal is offered:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `enabled` | `false` | Must be `true`. |
+| `command` | `["physics-replica"]` | The program (and at most 3 leading arguments), as a list; no shell is used. |
+| `urdf`, `target_joint` | required | The URDF (relative to the configuration file or absolute) and the joint whose frame is moved to each pose. |
+| `initial_joints` | `{}` | Joint positions to start from, `{"name": radians_or_meters}`; each next pose starts from the joints that reached the one before. |
+| `origin` | `[0, 0, 0]` | Added to the position of every pose to put it in the frame of the robot. |
+| `tolerance_m`, `max_iterations` | `0.002`, `200` | Passed to `ik`. |
+| `max_joint_step` | `0.5` | The most a joint may turn between two poses; more is refused. |
+| `timeout_seconds`, `max_waypoints` | `10`, `64` | Time for each call; a longer trajectory is `unavailable`. |
+| `fail_closed` | `true` | No proposal when the check cannot run. |
+
+The answer carries `kinematics` (`outcome` `reachable`, `unreachable` or `unavailable`, the reasons, how many poses were checked, the step that failed and the widest turn of a joint). `422` for `unreachable`, `503` for `unavailable` with `fail_closed`.
+Only the position of the tool is checked, not its orientation nor the collisions of the arm.
+
+`confirmation` (needs `--proposal-key-file` and `--robot-id`) makes every proposal wait for a person: `ttl_seconds` (60), `token_seconds` (30), `max_pending` (16, the oldest is dropped), `approval_validity_ms` (10000).
+`proposal.confirmation` carries `pending_id`; `GET /confirmations/pending` lists what waits; `POST /confirmations/<id>/prepare` `{"operator"}` answers `summary`, `fingerprint` and `confirmationToken`;
+`POST /confirmations/<id>/confirm` `{"operator", "confirmationToken"}` answers the signed approval; `POST /confirmations/<id>/reject` `{"operator"}` throws the proposal away. Errors: `404` no such proposal,
+`409` not prepared, `403` a token that is not genuine, not the one issued or from another operator, `410` an expired token. `serve --max-threads N` limits the requests handled at the same time (32 by default).
+
 ## Exit codes
 
 | Code | Meaning |

@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-221%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-269%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | 版本 | `0.2.0` |
 | 成熟度 | 可用 |
-| 测试 | 221 (`python -m pytest -q tests`) |
+| 测试 | 269 (`python -m pytest -q tests`) |
 | 技术栈 | Python / Vision-Language-Action model |
 | 目标 | HYDRA-UMC 工作单元的 Raspberry Pi CM5 |
 | 真实硬件 | 尚未：此版本没有在真实硬件上运行的记录 |
@@ -51,7 +51,7 @@ GPL-3.0-or-later - see LICENSE
 | 领域 | 状态 | 在这里的含义 |
 |---|---|---|
 | 软件 | 🟡 | 主要用途可用；上面的诚实性检查列出了仍然缺少的内容 |
-| 测试 | 🟢 | 221 项自动测试，每次变更都会运行 |
+| 测试 | 🟢 | 269 项自动测试，每次变更都会运行 |
 | 真实硬件 | 🔴 | 尚未：此版本没有在真实硬件上运行的记录 |
 | 接口与协议 | 🟡 | 提供的路由或消息已有文档，并用客户端测试过；尚未被所有客户端使用 |
 | 集成 | 🟠 | 在 CM5 测试台上与其他服务一起运行，其消息遵循 SDK 的共享契约 |
@@ -84,6 +84,9 @@ GPL-3.0-or-later - see LICENSE
   [HYDRA-UMC-COGNITIVE-NODE](https://github.com/JuanenRac/HYDRA-UMC-COGNITIVE-NODE) 下 4 个同级服务之一运行（与 Voice-UI、Semantic-Planner 和 Docs-QA 并列），共享父项目的 HydraOS 镜像和模型权重，而非各自保留独立副本。
 
 * 🧪 **一致预测、影子模式、置信度过滤和精确旋转（全部默认关闭，不会移动任何东西）：** 在 `configs/vla-engine.json` 中，`consistency.predictions` 大于 1 时，`POST /trajectory/integrate` 需要 N-1 个 `alternatives`，并在某个值与 `actions` 相差超过 `consistency.tolerance` 时不提供轨迹（HTTP 422）；`shadow.enabled` 启用 `POST /shadow/compare`，返回模型提出的动作与操作员给出的动作之间的差异（逐步、平均和最大）；`confidence.minimum` 大于 0 时，每个动作都需要一个 `confidences` 值，并拒绝含有可疑动作的轨迹。动作的三个旋转值是一个以四元数合成的旋转向量，在大角度和接近 90 度俯仰时依然正确。参见 `docs/CLI_REFERENCE.md`。
+* 🦾 **提案前的运动学检查（默认关闭）：** 配置文件的 `kinematics` 部分会让轨迹的每个位姿用 PHYSICS-REPLICA 的 `ik` 命令来试（子进程，每个位姿从到达上一个位姿的关节出发）；够不到的位姿，或两个位姿之间转得太多的关节，返回 `422`，无法运行的检查返回 `503`，除非文件另有规定。只检查位置：不检查姿态和碰撞。已用替身程序测试。
+* ✋ **由人分两步确认提案（默认关闭）：** 启用 `confirmation` 部分后，每个提案都要等待；操作员的设备请求摘要和令牌（`prepare`），再把令牌送回（`confirm`），得到针对该轨迹、该机器人和短时间签名的批准；令牌只接受一次，且只对准备它的操作员有效。服务器中的转发以及 Watch 和 Android 的界面尚未完成。
+* 🧵 **共享的 HTTP 辅助代码和同时请求上限：** 请求正文、响应和服务器来自 SDK 的规范 `http_common.py`；`--max-threads` 限制同时处理的请求数，多出的一个立即得到 `503`。
 
 ## 🧩 在 HYDRA-UMC 中的角色
 
@@ -141,7 +144,7 @@ flowchart LR
 
 ## 🧪 测试
 
-运行 `python -m pytest -q tests` 会执行 221 个自动测试。 不需要硬件，也不需要这台机器以外的任何东西。
+运行 `python -m pytest -q tests` 会执行 269 个自动测试。 不需要硬件，也不需要这台机器以外的任何东西。
 
 CI 运行 `HYDRA_UMC_CI=1 python tools/ci_validate.py`，检查清单、文档、八个 README 和图片。
 
@@ -250,7 +253,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### 当前状态与后续步骤
 
-**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 221 个测试和一个真实的 CLI。
+**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 269 个测试和一个真实的 CLI。
 
 **仍待完成，受限于真实硬件/真实模型：** 要真正运行推理,需要一个真实编译好的 VLA `.hef` 模型(为 Hailo-10 量化的 OpenVLA/RT-2——目前尚未选定具体模型)以及一块连接好的物理 Hailo-10 模块,这两者都是 `hailo_runtime.py` 自身无法消除的真实、不可避免的阻碍——但一旦模型存在,加载并解码它就不再是尚未编写的代码了。
 

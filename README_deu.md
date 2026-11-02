@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-221%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-269%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.2.0` |
 | Reifegrad | Funktionsfähig |
-| Tests | 221 (`python -m pytest -q tests`) |
+| Tests | 269 (`python -m pytest -q tests`) |
 | Technik | Python / Vision-Language-Action model |
 | Ziel | Der Raspberry Pi CM5 einer HYDRA-UMC-Zelle |
 | Auf echter Hardware | Noch nicht: für diese Version ist kein Lauf auf echter Hardware vermerkt |
@@ -51,7 +51,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 | Bereich | Stand | Was das hier bedeutet |
 |---|---|---|
 | Software | 🟡 | Funktioniert für seinen Hauptzweck; die Ehrlichkeitsprüfung oben nennt, was noch fehlt |
-| Tests | 🟢 | 221 automatische Tests, bei jeder Änderung ausgeführt |
+| Tests | 🟢 | 269 automatische Tests, bei jeder Änderung ausgeführt |
 | Echte Hardware | 🔴 | Noch nicht: für diese Version ist kein Lauf auf echter Hardware vermerkt |
 | Schnittstelle und Protokolle | 🟡 | Die angebotenen Routen oder Nachrichten sind dokumentiert und mit einem Client getestet; noch nicht jeder Client hat sie benutzt |
 | Integration | 🟠 | Es läuft zusammen mit den anderen Diensten auf dem CM5-Prüfstand, und seine Nachrichten folgen den gemeinsamen Verträgen des SDK |
@@ -87,6 +87,9 @@ Ziel ist, dass der Roboter Befehle wie „nimm das blaue Bauteil und lege es auf
   Kopien vorzuhalten.
 
 * 🧪 **Konsistente Vorhersagen, Schattenmodus, Konfidenzfilter und exakte Rotationen (alles standardmäßig aus, nichts bewegt etwas):** in `configs/vla-engine.json` verlangt `consistency.predictions` über 1, dass `POST /trajectory/integrate` N-1 `alternatives` bekommt und keine Trajektorie anbietet (HTTP 422), wenn ein Wert um mehr als `consistency.tolerance` von `actions` abweicht; `shadow.enabled` schaltet `POST /shadow/compare` ein, das den Unterschied zwischen den vom Modell vorgeschlagenen und den vom Bediener gegebenen Aktionen beantwortet (je Schritt, Mittel und Maximum); `confidence.minimum` über 0 verlangt einen `confidences`-Wert je Aktion und weist eine Trajektorie mit zweifelhafter Aktion ab. Die drei Rotationswerte einer Aktion sind ein Rotationsvektor, als Quaternionen zusammengesetzt, richtig bei großen Winkeln und nahe 90 Grad Nicken. Siehe `docs/CLI_REFERENCE.md`.
+* 🦾 **Kinematische Prüfung vor einem Vorschlag (standardmäßig aus):** der Abschnitt `kinematics` der Konfigurationsdatei lässt jede Pose einer Trajektorie mit dem Befehl `ik` von PHYSICS-REPLICA prüfen (ein Kindprozess, jede Pose startet bei den Gelenken, die die vorige erreicht haben); eine unerreichbare Pose oder ein Gelenk, das zwischen zwei Posen zu weit drehen würde, ergibt `422`, und eine Prüfung, die nicht laufen kann, ergibt `503`, sofern die Datei nichts anderes sagt. Nur die Position: Orientierung und Kollisionen werden nicht geprüft. Mit einem Ersatzprogramm getestet.
+* ✋ **Bestätigung eines Vorschlags durch eine Person in zwei Schritten (standardmäßig aus):** mit dem Abschnitt `confirmation` wartet jeder Vorschlag; das Gerät der Bedienperson fragt Zusammenfassung und Token an (`prepare`) und schickt das Token zurück (`confirm`), um eine für diese Trajektorie, diesen Roboter und kurze Zeit signierte Freigabe zu erhalten; das Token gilt einmal, für die Person, die es vorbereitet hat. Die Weiterleitung im Server und die Bildschirme von Watch und Android stehen noch aus.
+* 🧵 **Gemeinsame HTTP-Helfer und eine Grenze für gleichzeitige Anfragen:** Anfragekörper, Antworten und Server stammen aus der kanonischen `http_common.py` des SDK; `--max-threads` begrenzt die gleichzeitig bearbeiteten Anfragen, eine weitere erhält sofort `503`.
 
 ## 🧩 Rolle in HYDRA-UMC
 
@@ -186,7 +189,7 @@ Benötigt Python 3.10 oder neuer.
 
 ## 🧪 Tests
 
-221 automatische Tests laufen mit `python -m pytest -q tests`. Sie brauchen weder Hardware noch etwas außerhalb dieses Rechners.
+269 automatische Tests laufen mit `python -m pytest -q tests`. Sie brauchen weder Hardware noch etwas außerhalb dieses Rechners.
 
 Die CI führt `HYDRA_UMC_CI=1 python tools/ci_validate.py` aus; das prüft das Manifest, die Dokumente, die acht READMEs und die Bilder.
 
@@ -311,7 +314,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### Aktueller Status & Nächste Schritte
 
-**Heute real:** die Aktions-Token-Kodierung/-Dekodierung und die Trajektoriengenerierung (`action_tokens.py`, `trajectory.py`) - die Schritte "Aktions-Token" und "Trajektoriengenerator" im obigen Ablaufdiagramm - plus eine echte HailoRT-Integrationsgrenze (`hailo_runtime.py`), bereit für ein echtes `.hef`-Modell und ein Hailo-10-Modul, sobald diese existieren. 221 Tests und eine echte CLI.
+**Heute real:** die Aktions-Token-Kodierung/-Dekodierung und die Trajektoriengenerierung (`action_tokens.py`, `trajectory.py`) - die Schritte "Aktions-Token" und "Trajektoriengenerator" im obigen Ablaufdiagramm - plus eine echte HailoRT-Integrationsgrenze (`hailo_runtime.py`), bereit für ein echtes `.hef`-Modell und ein Hailo-10-Modul, sobald diese existieren. 269 Tests und eine echte CLI.
 
 **Noch offen, und blockiert durch echte Hardware/ein echtes Modell:** tatsächlich Inferenz auszuführen braucht ein echtes, kompiliertes VLA-`.hef`-Modell (OpenVLA/RT-2 quantisiert für Hailo-10 - noch kein konkretes Modell gewählt) und ein angeschlossenes physisches Hailo-10-Modul, beides echte, unvermeidliche Blocker, die `hailo_runtime.py` allein nicht beseitigen kann - aber ein Modell zu laden und zu dekodieren, sobald es existiert, ist kein ungeschriebener Code mehr.
 

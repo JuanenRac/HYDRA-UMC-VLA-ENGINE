@@ -16,87 +16,55 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Callable, Sequence
 from dataclasses import asdict
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import urlparse
 
 from . import __version__
 from .service_metrics import MetricsHandlerMixin
 from .proposal_signing import sign_proposal
 from .access import authorized, reject
 from .guard import REJECTED, GuardLimits, guard_trajectory
+from .http_common import DEFAULT_MAX_BODY_BYTES, DEFAULT_MAX_THREADS, SOCKET_TIMEOUT_SECONDS, BoundedThreadingHTTPServer, query_params, read_json_body, write_error, write_json
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
 from .confidence import ConfidenceConfigError, ConfidencePolicy, low_confidence_steps
 from .consistency import ConsistencyConfigError, ConsistencyPolicy, inconsistent_steps
+from .confirmation import ConfirmationError, ConfirmationStore, summarize
 from .hardware import check_engine_status
+from .kinematic_check import REACHABLE, UNAVAILABLE, KinematicResult, KinematicsPolicy, check_reach
 from .shadow import ShadowError, ShadowPolicy, append_log, compare_actions
 from .trajectory import Pose, TrajectoryError, integrate_trajectory
 
 
+def _json_default(o: object) -> object:
+    if hasattr(o, "__dataclass_fields__"):
+        return asdict(o)  # type: ignore[call-overload]
+    if hasattr(o, "value"):  # enum
+        return o.value
+    return str(o)
+
+
 def _write_json(handler: BaseHTTPRequestHandler, status: int, payload: object) -> None:
-    def default(o: object) -> object:
-        if hasattr(o, "__dataclass_fields__"):
-            return asdict(o)  # type: ignore[call-overload]
-        if hasattr(o, "value"):  # enum
-            return o.value
-        return str(o)
-    body = json.dumps(payload, default=default).encode("utf-8")
-    handler.send_response(status)
-    handler.send_header("Content-Type", "application/json")
-    handler.send_header("Content-Length", str(len(body)))
-    handler.end_headers()
-    handler.wfile.write(body)
+    write_json(handler, status, payload, default=_json_default)
 
 
 def _write_error(handler: BaseHTTPRequestHandler, status: int, message: str) -> None:
-    _write_json(handler, status, {"error": message})
+    write_error(handler, status, message)
 
 
-# Real fix: this used to read a caller-controlled Content-Length with no
-# upper bound at all - a lying/oversized header could force unbounded
-# memory buffering (same real DoS/OOM class already closed in this
-# family's other api.py files, e.g. HYDRA-UMC-ANOMALY-DETECTOR's own).
-MAX_BODY_BYTES = 1024 * 1024
-# How much of an oversized body this drains before responding - lets the
-# client finish sending before the response goes out (same reasoning as
-# the sibling api.py modules that already do this). The drained bytes are
-# read in 64 KiB pieces and thrown away, so nothing large is held in memory.
-DRAIN_CAP_BYTES = MAX_BODY_BYTES * 16
-
-
-def _reject_constant(name: str) -> float:
-    raise ValueError(f"{name} is not a valid JSON number")
-
-
-def _discard(rfile, length: int, chunk: int = 64 * 1024) -> None:
-    """Reads and throws away `length` bytes in small pieces (never a 16 MiB buffer)."""
-    remaining = length
-    while remaining > 0:
-        block = rfile.read(min(chunk, remaining))
-        if not block:
-            return
-        remaining -= len(block)
+# The body of a request is bounded, NaN and the infinities are refused, an oversized body is drained in small pieces: http_common.py (the canonical
+# copy lives in HYDRA-UMC-SDK and is shared by the Python services).
+MAX_BODY_BYTES = DEFAULT_MAX_BODY_BYTES
 
 
 def _read_json_body(handler: BaseHTTPRequestHandler) -> dict:
-    try:
-        length = int(handler.headers.get("Content-Length", "0") or "0")
-    except ValueError as error:
-        raise ValueError("Content-Length must be an integer") from error
-    if length < 0 or length > MAX_BODY_BYTES:
-        if 0 <= length <= DRAIN_CAP_BYTES:
-            _discard(handler.rfile, length)
-        raise ValueError(f"request body must contain 0-{MAX_BODY_BYTES} bytes")
-    raw = handler.rfile.read(length) if length > 0 else b"{}"
-    # json.loads accepts the literals NaN, Infinity and -Infinity, which are not JSON: they would reach the model's arithmetic as real numbers.
-    return json.loads(raw, parse_constant=_reject_constant)
+    return read_json_body(handler, MAX_BODY_BYTES)
 
 
 def _query_params(handler: BaseHTTPRequestHandler) -> dict[str, str]:
-    parsed = urlparse(handler.path)
-    values = parse_qs(parsed.query, keep_blank_values=True)
-    return {key: value[0] for key, value in values.items() if value}
+    return query_params(handler, "first")
 
 
 def proposal_record(
@@ -154,7 +122,7 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
 
     # Seconds a client may stay silent on its connection before it is dropped,
     # so one that connects and sends nothing cannot hold a handler thread.
-    timeout = 15.0
+    timeout = SOCKET_TIMEOUT_SECONDS
 
     def log_message(self, format: str, *args: object) -> None:  # noqa: A002
         pass  # quiet by default, same reasoning as this family's other api.py files
@@ -189,6 +157,8 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
             })
         elif path == "/health":
             _write_json(self, 200, {"ok": True})
+        elif path == "/confirmations/pending" and self.server.confirmations is not None:
+            _write_json(self, 200, {"pending": self.server.confirmations.list()})
         elif path == "/stats":
             _write_json(self, 200, {"workspace": str(self.server.workspace)})
         else:
@@ -215,6 +185,8 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
             self._handle_integrate(body)
         elif path == "/shadow/compare" and self.server.shadow.enabled:
             self._handle_shadow(body)
+        elif path.startswith("/confirmations/") and path.count("/") == 3 and self.server.confirmations is not None:
+            self._handle_confirmation(path.split("/")[2], path.split("/")[3], body)
         else:
             _write_error(self, 404, "not found")
 
@@ -243,6 +215,28 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
             _write_error(self, 400, str(e))
             return
         _write_json(self, 200, {"action": list(values)})
+
+    def _handle_confirmation(self, pending_id: str, action: str, body: dict) -> None:
+        """The two steps of the confirmation of a proposal (confirmation.py): prepare -> the summary and a token; confirm -> the signed approval; reject."""
+        store = self.server.confirmations
+        assert store is not None
+        if not isinstance(body, dict):
+            _write_error(self, 400, "the body must be a JSON object")
+            return
+        try:
+            if action == "prepare":
+                result = store.prepare(pending_id, body.get("operator"))
+            elif action == "confirm":
+                result = store.confirm(pending_id, body.get("operator"), body.get("confirmationToken"))
+            elif action == "reject":
+                result = store.reject(pending_id, body.get("operator"))
+            else:
+                _write_error(self, 404, "not found")
+                return
+        except ConfirmationError as e:
+            _write_error(self, e.status, str(e))
+            return
+        _write_json(self, 200, result)
 
     def _handle_shadow(self, body: dict) -> None:
         # shadow mode: measures the difference between the proposed and the operator's actions; nothing is offered or moved
@@ -301,11 +295,30 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
             return
         else:
             guard_info = {"outcome": "not_configured", "reasons": [], "rejected_at_step": None}
+        kinematics_info: dict | None = None
+        if self.server.kinematics.enabled:
+            reach: KinematicResult = self.server.kinematic_runner(poses, self.server.kinematics)
+            kinematics_info = reach.as_dict()
+            if reach.outcome != REACHABLE:
+                refused = reach.outcome != UNAVAILABLE or self.server.kinematics.fail_closed
+                if refused:
+                    # a trajectory the robot cannot follow (or that could not be checked while the check is required) is not shown as a proposal at all
+                    _write_json(self, 422 if reach.outcome != UNAVAILABLE else 503, {"error": "the kinematic check did not pass", "kinematics": kinematics_info, "guard": guard_info})
+                    return
         pose_dicts = [asdict(p) for p in poses]
-        _write_json(self, 200, {"poses": pose_dicts, "guard": guard_info, "proposal": proposal_record(pose_dicts, self.server.proposal_signer, model_version=self.server.model_version, instruction_sha256=instruction_sha256)})
+        proposal = proposal_record(pose_dicts, self.server.proposal_signer, model_version=self.server.model_version, instruction_sha256=instruction_sha256)
+        answer: dict = {"poses": pose_dicts, "guard": guard_info, "proposal": proposal}
+        if kinematics_info is not None:
+            answer["kinematics"] = kinematics_info
+        if self.server.confirmations is not None:
+            # the proposal waits for a person (two steps, confirmation.py); nothing here marks it as approved
+            proposal["confirmation"] = self.server.confirmations.create(
+                proposal["fingerprint"], summarize(poses, robot_id=self.server.confirmations.robot_id, guard=guard_info, kinematics=kinematics_info),
+            )
+        _write_json(self, 200, answer)
 
 
-class VlaEngineServer(ThreadingHTTPServer):
+class VlaEngineServer(BoundedThreadingHTTPServer):
     def __init__(
         self,
         address: tuple[str, int],
@@ -318,8 +331,17 @@ class VlaEngineServer(ThreadingHTTPServer):
         confidence: ConfidencePolicy | None = None,
         consistency: ConsistencyPolicy | None = None,
         shadow: ShadowPolicy | None = None,
+        kinematics: KinematicsPolicy | None = None,
+        kinematic_runner: Callable[[Sequence[Pose], KinematicsPolicy], KinematicResult] = check_reach,
+        confirmations: ConfirmationStore | None = None,
+        max_threads: int = DEFAULT_MAX_THREADS,
     ) -> None:
-        super().__init__(address, Handler)
+        super().__init__(address, Handler, max_threads)
+        # the check of the reach of the robot (kinematic_check.py); off by default. The runner can be replaced, so the tests do not need the program
+        self.kinematics = kinematics or KinematicsPolicy()
+        self.kinematic_runner = kinematic_runner
+        # the two-step confirmation of the proposals (confirmation.py); None leaves its routes answering 404 and the proposals as they were
+        self.confirmations = confirmations
         # the lowest confidence an action may have (confidence.py); off by default
         self.confidence = confidence or ConfidencePolicy()
         # how many repeated predictions of a step must agree (consistency.py); off by default
