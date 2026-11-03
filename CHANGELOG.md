@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The kinematic check can ask a running PHYSICS-REPLICA instead of a child process:** the `kinematics` section takes `service_url` (empty, so off, by default), `service_token_env` (the name of the environment variable that holds the token, never the token) and `service_fallback` (true: the child process answers when the service cannot be used). The address must be plain, and one that is not on this machine needs a token variable; redirects are not followed and the answer is bounded in size. A goal the service does not reach is a verdict, a service that ran out of time is `unavailable`.
+
 ## [0.2.1] - The HTTP helpers are the ones shared with the other Python services, a kinematic check of a trajectory and a human confirmation of a proposal in two steps, both off by default, and GET /metrics
 
 - **The HTTP helpers are the ones shared with the other Python services:** `http_common.py` is the canonical copy of HYDRA-UMC-SDK (kept identical by its sync script): the body of a request is read with the same limit and the same refusals (a `Content-Length` that is not a number or is negative, `NaN` and the infinities, a body that is not UTF-8), the answers carry their length, and the server is a `BoundedThreadingHTTPServer`: at most `--max-threads` requests (1 to 1024, 32 by default) are handled at the same time and one more is answered `503` with `Retry-After` at once instead of starting another thread.

@@ -220,6 +220,9 @@ Both are sections of the configuration file (`--config`, or the file named by `H
 | `max_joint_step` | `0.5` | The most a joint may turn between two poses; more is refused. |
 | `timeout_seconds`, `max_waypoints` | `10`, `64` | Time for each call; a longer trajectory is `unavailable`. |
 | `fail_closed` | `true` | No proposal when the check cannot run. |
+| `service_url` | `""` (off) | The address of a running `serve` of HYDRA-UMC-PHYSICS-REPLICA (`http://127.0.0.1:8118`, no path); each pose is then asked to its `POST /ik` instead of a child process. That route is off in PHYSICS-REPLICA until its own configuration says `"ik": {"enabled": true}`. |
+| `service_token_env` | `""` | The name of the environment variable that holds the bearer token of that service. The token is never read from the file. An address that is not on this machine is refused unless this is set. |
+| `service_fallback` | `true` | When the service cannot be used (it does not answer, is off, refuses the token or answers something unreadable) the child process answers instead; `false` makes that `unavailable`. A goal the service says it did not reach is a verdict and is not asked again; a request that ran out of time is `unavailable`. |
 
 The answer carries `kinematics` (`outcome` `reachable`, `unreachable` or `unavailable`, the reasons, how many poses were checked, the step that failed and the widest turn of a joint). `422` for `unreachable`, `503` for `unavailable` with `fail_closed`.
 Only the position of the tool is checked, not its orientation nor the collisions of the arm.

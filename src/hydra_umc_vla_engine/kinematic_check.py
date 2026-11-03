@@ -21,9 +21,17 @@ The whole thing is off unless the `kinematics` section of the configuration file
     {"kinematics": {"enabled": true, "command": ["physics-replica"], "urdf": "robot.urdf", "target_joint": "wrist",
                     "initial_joints": {"shoulder": 0.0, "elbow": 0.5}, "origin": [0.0, 0.0, 0.0], "tolerance_m": 0.002,
                     "max_iterations": 200, "max_joint_step": 0.5, "timeout_seconds": 10, "max_waypoints": 64, "fail_closed": true}}
+
+Optionally the same question goes to a running `serve` of PHYSICS-REPLICA (its `POST /ik`, which that service answers only when its own configuration opens it)
+instead of a child process: `"service_url": "http://127.0.0.1:8118"`. It is empty (off) by default. A service that is not on this machine needs a token, which is read
+from the environment variable named by `service_token_env` and never from the file. When the service cannot be used (it does not answer, answers an error such as
+`ik_off` or `401`, or answers something unreadable) the child process answers instead, unless `service_fallback` is false; a clear "the goal is not reached" from the
+service is a verdict and is not asked again. A service that ran out of time (`timed_out`) is `unavailable`, not a verdict on the pose.
 """
 from __future__ import annotations
 
+import http.client
+import ipaddress
 import json
 import math
 import os
@@ -34,12 +42,16 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from .trajectory import Pose
 
 CONFIG_ENV = "HYDRA_UMC_VLA_ENGINE_CONFIG"
 REACHABLE, UNREACHABLE, UNAVAILABLE = "reachable", "unreachable", "unavailable"
-_KEYS = {"enabled", "command", "urdf", "target_joint", "initial_joints", "origin", "tolerance_m", "max_iterations", "max_joint_step", "timeout_seconds", "max_waypoints", "fail_closed"}
+_KEYS = {"enabled", "command", "urdf", "target_joint", "initial_joints", "origin", "tolerance_m", "max_iterations", "max_joint_step", "timeout_seconds", "max_waypoints", "fail_closed",
+         "service_url", "service_token_env", "service_fallback"}
+_MAX_SERVICE_ANSWER = 1024 * 1024
+_ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}")
 _NAME = re.compile(r"[A-Za-z0-9_.:-]{1,64}")
 _PART = re.compile(r"[A-Za-z0-9_./:\\ -]{1,300}")
 _LINE = re.compile(r"^([A-Za-z0-9_.:-]{1,64})=(-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)$")
@@ -63,10 +75,25 @@ class KinematicsPolicy:
     timeout_seconds: float = 10.0
     max_waypoints: int = 64
     fail_closed: bool = True
+    service_url: str = ""
+    service_token_env: str = ""
+    service_fallback: bool = True
 
     def __post_init__(self) -> None:
         if not self.enabled:
             return
+        if not isinstance(self.service_fallback, bool):
+            raise KinematicsConfigError("kinematics.service_fallback must be true or false")
+        if not isinstance(self.service_token_env, str) or (self.service_token_env and not _ENV_NAME.fullmatch(self.service_token_env)):
+            raise KinematicsConfigError("kinematics.service_token_env is the name of an environment variable")
+        if not isinstance(self.service_url, str):
+            raise KinematicsConfigError("kinematics.service_url must be a text")
+        if self.service_url:
+            parts = _service_parts(self.service_url)
+            if parts is None:
+                raise KinematicsConfigError("kinematics.service_url must look like http://127.0.0.1:8118 (no path, user or query)")
+            if not _is_loopback(parts[1]) and not self.service_token_env:
+                raise KinematicsConfigError("a kinematics.service_url that is not on this machine needs kinematics.service_token_env")
         if not self.urdf or not self.target_joint or not _NAME.fullmatch(self.target_joint):
             raise KinematicsConfigError("kinematics needs urdf and target_joint (a joint name of 1 to 64 plain characters)")
         if not self.command or any(not isinstance(c, str) or not _PART.fullmatch(c) for c in self.command) or len(self.command) > 4:
@@ -86,7 +113,28 @@ class KinematicsPolicy:
 
     def describe(self) -> dict[str, Any]:
         return {"enabled": self.enabled, "target_joint": self.target_joint, "tolerance_m": self.tolerance_m, "max_joint_step": self.max_joint_step,
-                "max_waypoints": self.max_waypoints, "fail_closed": self.fail_closed}
+                "max_waypoints": self.max_waypoints, "fail_closed": self.fail_closed, "service": bool(self.service_url)}
+
+
+def _service_parts(url: str) -> tuple[str, str, int] | None:
+    """(scheme, host, port) of `http(s)://host[:port]` with nothing else, or None."""
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+    except ValueError:
+        return None
+    if parts.scheme not in ("http", "https") or not parts.hostname or parts.username or parts.password or parts.query or parts.fragment or parts.path not in ("", "/"):
+        return None
+    return parts.scheme, parts.hostname, port or (443 if parts.scheme == "https" else 80)
+
+
+def _is_loopback(host: str) -> bool:
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def load_kinematics_policy(path: str | os.PathLike[str] | None = None) -> KinematicsPolicy:
@@ -143,7 +191,95 @@ def _joints_arg(joints: dict[str, float]) -> str:
     return ",".join(f"{name}={value:.9f}" for name, value in sorted(joints.items()))
 
 
-def check_reach(poses: Sequence[Pose], policy: KinematicsPolicy, runner: Runner = _run, clock: Callable[[], float] = time.monotonic) -> KinematicResult:
+ServiceCaller = Callable[[str, dict[str, Any], str, float], "tuple[int, Any]"]
+
+
+def _call_service(url: str, body: dict[str, Any], token: str, timeout: float) -> tuple[int, Any]:
+    """POST /ik to the service: (status, JSON answer). Raises OSError or ValueError when nothing readable comes back. Redirects are not followed."""
+    parts = _service_parts(url)
+    if parts is None:
+        raise ValueError("the service address is not valid")
+    scheme, host, port = parts
+    connection_class = http.client.HTTPSConnection if scheme == "https" else http.client.HTTPConnection
+    connection = connection_class(host, port, timeout=timeout)
+    try:
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        connection.request("POST", "/ik", body=json.dumps(body).encode("utf-8"), headers=headers)
+        response = connection.getresponse()
+        raw = response.read(_MAX_SERVICE_ANSWER + 1)
+        if len(raw) > _MAX_SERVICE_ANSWER:
+            raise ValueError("the service answer is too large")
+        return response.status, json.loads(raw.decode("utf-8"))
+    except http.client.HTTPException as error:
+        raise OSError(type(error).__name__) from error
+    finally:
+        connection.close()
+
+
+# what one step answers: (REACHABLE, joints) | (UNREACHABLE, message) | (UNAVAILABLE, message)
+_Step = tuple[str, "dict[str, float] | str"]
+
+
+def _ask_service(goal: tuple[float, float, float], joints: dict[str, float], policy: KinematicsPolicy, caller: ServiceCaller, step: int) -> _Step | None:
+    """The answer of the service for one pose, or None when it cannot be used (the child process may then answer)."""
+    body: dict[str, Any] = {"target": policy.target_joint, "goal": [float(v) for v in goal], "tolerance": policy.tolerance_m, "max_iterations": policy.max_iterations}
+    if joints:
+        body["joints"] = dict(joints)
+    token = os.environ.get(policy.service_token_env, "") if policy.service_token_env else ""
+    try:
+        status, answer = caller(policy.service_url, body, token, policy.timeout_seconds)
+    except (OSError, ValueError):
+        return None
+    if status != 200 or not isinstance(answer, dict) or not isinstance(answer.get("reached"), bool):
+        return None
+    if answer.get("timed_out") is True:
+        return UNAVAILABLE, f"the kinematics service ran out of time at step {step}"
+    if not answer["reached"]:
+        residual = answer.get("residual")
+        text = f" (residual {residual:.6f} m)" if isinstance(residual, (int, float)) and not isinstance(residual, bool) and math.isfinite(residual) else ""
+        return UNREACHABLE, f"the kinematics service did not reach the goal{text}"
+    solved = answer.get("joints")
+    if not isinstance(solved, dict) or not solved:
+        return None
+    out: dict[str, float] = {}
+    for name, value in solved.items():
+        if not isinstance(name, str) or not _NAME.fullmatch(name) or isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            return None
+        out[name] = float(value)
+    return REACHABLE, out
+
+
+def _ask_process(goal: tuple[float, float, float], joints: dict[str, float], policy: KinematicsPolicy, runner: Runner, step: int) -> _Step:
+    command = [*policy.command, "ik", "--urdf", policy.urdf, "--target", policy.target_joint, "--goal", ",".join(f"{v:.9f}" for v in goal),
+               "--tolerance", f"{policy.tolerance_m:g}", "--max-iterations", str(policy.max_iterations)]
+    if joints:
+        command += ["--joints", _joints_arg(joints)]
+    try:
+        done = runner(command, policy.timeout_seconds)
+    except subprocess.TimeoutExpired:
+        return UNAVAILABLE, f"the kinematics did not answer within {policy.timeout_seconds:g} s at step {step}"
+    except OSError as error:
+        return UNAVAILABLE, f"the kinematics program cannot be run: {error.strerror or type(error).__name__}"
+    if done.returncode == 1:
+        message = (done.stderr or "").strip().splitlines()[-1:] or ["no answer"]
+        return UNREACHABLE, f"cannot be reached: {message[0][:200]}"
+    if done.returncode != 0:
+        message = (done.stderr or "").strip().splitlines()[-1:] or [f"exit code {done.returncode}"]
+        return UNAVAILABLE, f"the kinematics failed at step {step}: {message[0][:200]}"
+    solved: dict[str, float] = {}
+    for line in done.stdout.splitlines():
+        match = _LINE.match(line.strip())
+        if match:
+            solved[match.group(1)] = float(match.group(2))
+    if not solved or any(not math.isfinite(v) for v in solved.values()):
+        return UNAVAILABLE, f"the kinematics answered nothing readable at step {step}"
+    return REACHABLE, solved
+
+
+def check_reach(poses: Sequence[Pose], policy: KinematicsPolicy, runner: Runner = _run, clock: Callable[[], float] = time.monotonic,
+                service_caller: ServiceCaller = _call_service) -> KinematicResult:
     """Ask the kinematics whether every pose of the trajectory can be reached, one after the other."""
     started = clock()
     if len(poses) > policy.max_waypoints:
@@ -152,29 +288,18 @@ def check_reach(poses: Sequence[Pose], policy: KinematicsPolicy, runner: Runner 
     widest = 0.0
     for step, pose in enumerate(poses):
         goal = (pose.x + policy.origin[0], pose.y + policy.origin[1], pose.z + policy.origin[2])
-        command = [*policy.command, "ik", "--urdf", policy.urdf, "--target", policy.target_joint, "--goal", ",".join(f"{v:.9f}" for v in goal),
-                   "--tolerance", f"{policy.tolerance_m:g}", "--max-iterations", str(policy.max_iterations)]
-        if joints:
-            command += ["--joints", _joints_arg(joints)]
-        try:
-            done = runner(command, policy.timeout_seconds)
-        except subprocess.TimeoutExpired:
-            return KinematicResult(UNAVAILABLE, [f"the kinematics did not answer within {policy.timeout_seconds:g} s at step {step}"], step, step, widest, clock() - started)
-        except OSError as error:
-            return KinematicResult(UNAVAILABLE, [f"the kinematics program cannot be run: {error.strerror or type(error).__name__}"], step, step, widest, clock() - started)
-        if done.returncode == 1:
-            message = (done.stderr or "").strip().splitlines()[-1:] or ["no answer"]
-            return KinematicResult(UNREACHABLE, [f"step {step} ({goal[0]:.3f}, {goal[1]:.3f}, {goal[2]:.3f}) cannot be reached: {message[0][:200]}"], step, step, widest, clock() - started)
-        if done.returncode != 0:
-            message = (done.stderr or "").strip().splitlines()[-1:] or [f"exit code {done.returncode}"]
-            return KinematicResult(UNAVAILABLE, [f"the kinematics failed at step {step}: {message[0][:200]}"], step, step, widest, clock() - started)
-        solved: dict[str, float] = {}
-        for line in done.stdout.splitlines():
-            match = _LINE.match(line.strip())
-            if match:
-                solved[match.group(1)] = float(match.group(2))
-        if not solved or any(not math.isfinite(v) for v in solved.values()):
-            return KinematicResult(UNAVAILABLE, [f"the kinematics answered nothing readable at step {step}"], step, step, widest, clock() - started)
+        answer: _Step | None = _ask_service(goal, joints, policy, service_caller, step) if policy.service_url else None
+        if answer is None:
+            if policy.service_url and not policy.service_fallback:
+                return KinematicResult(UNAVAILABLE, [f"the kinematics service cannot be used at step {step}"], step, step, widest, clock() - started)
+            answer = _ask_process(goal, joints, policy, runner, step)
+        outcome, payload = answer
+        if outcome == UNREACHABLE:
+            return KinematicResult(UNREACHABLE, [f"step {step} ({goal[0]:.3f}, {goal[1]:.3f}, {goal[2]:.3f}) {payload}"], step, step, widest, clock() - started)
+        if outcome == UNAVAILABLE:
+            return KinematicResult(UNAVAILABLE, [str(payload)], step, step, widest, clock() - started)
+        assert isinstance(payload, dict)
+        solved = payload
         if joints:
             jump = max((abs(solved[name] - joints[name]) for name in solved if name in joints), default=0.0)
             widest = max(widest, jump)

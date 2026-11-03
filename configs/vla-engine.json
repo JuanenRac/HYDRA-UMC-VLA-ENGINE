@@ -30,7 +30,10 @@
     "max_joint_step": 0.5,
     "timeout_seconds": 10,
     "max_waypoints": 64,
-    "fail_closed": true
+    "fail_closed": true,
+    "service_url": "",
+    "service_token_env": "",
+    "service_fallback": true
   },
   "confirmation": {
     "enabled": false,
