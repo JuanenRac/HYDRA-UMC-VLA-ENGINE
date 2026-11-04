@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The identity of HYDRA-UMC-SERVER, off by default (`serve --identity-key-file FILE`, or `HYDRA_UMC_VLA_ENGINE_IDENTITY_KEY_FILE`):** the service verifies the signed token (HS256 JWT with `exp`, `username` and `role`) that the server issues at login and accepts it next to its own token. A viewer may read but not change, a request with no credential is refused even on loopback, and an address that is not loopback no longer needs a token of the service. The key is the signing key of the server, read from a file that only the group of the service may read, at least 32 characters; without the switch nothing changes. `server_identity.py` is the canonical copy of the SDK. 2 tests.
+
 - **The check for model weights uses the probe the family shares:** `model_weights.py` (vendored byte for byte from the shared SDK, kept identical by its sync) replaces the walk that this engine and the cognitive node each had; the engine still accepts the compiled `.hef` model only. The same tests pass against the shared walk.
 
 - **The kinematic check can ask a running PHYSICS-REPLICA instead of a child process:** the `kinematics` section takes `service_url` (empty, so off, by default), `service_token_env` (the name of the environment variable that holds the token, never the token) and `service_fallback` (true: the child process answers when the service cannot be used). The address must be plain, and one that is not on this machine needs a token variable; redirects are not followed and the answer is bounded in size. A goal the service does not reach is a verdict, a service that ran out of time is `unavailable`.

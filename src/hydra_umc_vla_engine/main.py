@@ -24,6 +24,7 @@ from pathlib import Path
 from . import __version__
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
 from .access import bind_problem, load_token
+from .server_identity import identity_key_from
 from .proposal_signing import ProposalKeyError, load_key, sign_proposal
 from .api import VlaEngineServer
 from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
@@ -154,10 +155,12 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         return 2
     try:
         token = load_token(args.token_file)
+        identity_key = identity_key_from(args.identity_key_file)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    problem = bind_problem(args.addr, token)
+    # with the identity of the SERVER on, no request is ever open, so an address that is not loopback does not need a token of its own
+    problem = None if identity_key is not None else bind_problem(args.addr, token)
     if problem:
         print(f"error: {problem}", file=sys.stderr)
         return 2
@@ -204,6 +207,7 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
+    server.identity_key = identity_key
     if kinematics.enabled:
         print(f"[vla-engine] kinematic check on: every pose is tried with the kinematics of PHYSICS-REPLICA on {kinematics.target_joint} ({'no trajectory without the check' if kinematics.fail_closed else 'a failing check is reported'})")
     if confirmations is not None:
@@ -212,7 +216,7 @@ def _cmd_serve(args: argparse.Namespace) -> int:
         print("[vla-engine] no trajectory guard: trajectories are offered with guard=not_configured (give --guard-file to check them against the limits of the cell)")
     else:
         print(f"[vla-engine] trajectory guard from {guard_path}: work volume, step limits and {len(guard.zones)} zone(s)")
-    print(f"[vla-engine] HTTP API listening on {args.addr}:{args.port} (workspace={args.workspace}; {'Bearer token required' if token else 'no token, loopback only'})")
+    print(f"[vla-engine] HTTP API listening on {args.addr}:{args.port} (workspace={args.workspace}; {'Bearer token required' if token else 'no token, loopback only'}{'; tokens of HYDRA-UMC-SERVER accepted, no request is open' if identity_key is not None else ''})")
     print("[vla-engine] POST /tokens/encode, POST /tokens/decode, POST /trajectory/integrate, GET /status, GET /stats")
     try:
         server.serve_forever()
@@ -279,6 +283,7 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--proposal-valid-seconds", type=float, default=60.0, dest="proposal_valid_seconds",
                        help="how long a signed proposal stays valid, at most 600 (default 60)")
     serve.add_argument("--token-file", default=None, help="file with the bearer token every request must present (or the HYDRA_UMC_VLA_ENGINE_TOKEN environment variable). Needed to bind an address that is not loopback.")
+    serve.add_argument("--identity-key-file", default=None, help="file with the signing key of HYDRA-UMC-SERVER (its JWT_SECRET): a valid token of the SERVER is then accepted, and a request with no credential is refused even on loopback (off by default; or set HYDRA_UMC_VLA_ENGINE_IDENTITY_KEY_FILE)")
     serve.add_argument(
         "--workspace",
         type=Path,

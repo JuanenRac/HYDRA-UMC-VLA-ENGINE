@@ -11,11 +11,12 @@ the comparison takes constant time. The token comes from a file (--token-file) o
 """
 from __future__ import annotations
 
-import hmac
 import ipaddress
 import os
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+
+from .server_identity import accepts
 
 TOKEN_ENV = "HYDRA_UMC_VLA_ENGINE_TOKEN"
 MIN_TOKEN_LENGTH = 16
@@ -53,11 +54,9 @@ def bind_problem(addr: str, token: str) -> str | None:
 
 
 def authorized(handler: BaseHTTPRequestHandler, expected: str) -> bool:
-    """True when no token is configured, or the request presents exactly that Bearer token."""
-    if not expected:
-        return True
-    scheme, _, presented = handler.headers.get("Authorization", "").partition(" ")
-    return scheme == "Bearer" and hmac.compare_digest(presented.strip().encode("utf-8"), expected.encode("utf-8"))
+    """True when no token is configured, or the request presents exactly that Bearer token. When the server holds an identity key
+    (`--identity-key-file`), a valid token of HYDRA-UMC-SERVER is accepted too and a request with no credential is refused (server_identity.py)."""
+    return accepts(handler, expected, getattr(getattr(handler, "server", None), "identity_key", None))
 
 
 def reject(handler: BaseHTTPRequestHandler) -> None:

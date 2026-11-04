@@ -118,3 +118,59 @@ def test_serve_refuses_a_non_loopback_address_without_a_token(capsys: pytest.Cap
     assert _cmd_serve(args) == 2
     assert "not loopback" in capsys.readouterr().err
 
+
+
+# ---- the identity of HYDRA-UMC-SERVER (off by default; see server_identity.py)
+IDENTITY_KEY = b"a-signing-key-of-the-server-0123456789"
+
+
+def _signed_token(role: str = "operator", key: bytes = IDENTITY_KEY, exp_offset: int = 600) -> str:
+    import base64
+    import hashlib
+    import hmac
+    import json
+    import time
+
+    def b64(data: bytes) -> str:
+        return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+    head = b64(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+    body = b64(json.dumps({"username": "ana", "role": role, "exp": int(time.time()) + exp_offset}).encode())
+    return f"{head}.{body}.{b64(hmac.new(key, f'{head}.{body}'.encode(), hashlib.sha256).digest())}"
+
+
+@contextmanager
+def _running_with_identity(token: str, key: bytes | None):
+    server = VlaEngineServer(("127.0.0.1", 0), Path("."), token)
+    server.identity_key = key
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_address[1]}"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_the_identity_of_the_server_is_off_by_default() -> None:
+    assert VlaEngineServer.identity_key is None
+    with _running_with_identity("", None) as base:
+        assert _call(f"{base}/nothing", None) == 404  # open on loopback, as before
+        assert _call(f"{base}/nothing", _signed_token()) == 404  # a token of the SERVER means nothing, and nothing is asked
+    with _running_with_identity(TOKEN, None) as base:
+        assert _call(f"{base}/nothing", _signed_token()) == 401
+        assert _call(f"{base}/nothing", TOKEN) == 404
+
+
+def test_with_the_identity_on_a_token_of_the_server_is_accepted_and_nothing_is_open() -> None:
+    with _running_with_identity("", IDENTITY_KEY) as base:
+        assert _call(f"{base}/nothing", None) == 401  # no credential, even on loopback and without a token of the service
+        assert _call(f"{base}/nothing", "not-a-token") == 401
+        assert _call(f"{base}/nothing", _signed_token("viewer")) == 404  # accepted: the path just does not exist
+        assert _call(f"{base}/tokens/encode", _signed_token("viewer"), b"{}") == 401  # a viewer reads, it does not change
+        assert _call(f"{base}/nothing", _signed_token(key=b"another-key-of-more-than-32-characters!")) == 401
+        assert _call(f"{base}/nothing", _signed_token(exp_offset=-5)) == 401
+    with _running_with_identity(TOKEN, IDENTITY_KEY) as base:
+        assert _call(f"{base}/nothing", TOKEN) == 404  # the own token keeps working
+        assert _call(f"{base}/nothing", _signed_token("admin")) == 404

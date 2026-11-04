@@ -319,6 +319,8 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
 
 
 class VlaEngineServer(BoundedThreadingHTTPServer):
+    identity_key: bytes | None = None  # the signing key of HYDRA-UMC-SERVER, when the operator turned the identity of the server on (server_identity.py)
+
     def __init__(
         self,
         address: tuple[str, int],
