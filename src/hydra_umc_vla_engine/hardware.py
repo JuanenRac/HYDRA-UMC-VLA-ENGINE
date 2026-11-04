@@ -15,9 +15,10 @@ sibling HYDRA-UMC-VISION-NODE's own hardware.py.
 from __future__ import annotations
 
 import enum
-import os
 from dataclasses import dataclass
 from pathlib import Path
+
+from .model_weights import COMPILED_MODEL_SUFFIXES, contains_model_artifact
 
 HAILO_DEVICE_PATH = Path("/dev/hailo0")
 
@@ -30,7 +31,7 @@ PARENT_MODELS_DIR_NAME = "models"
 
 # A compiled model this engine could load onto the accelerator. The parent
 # also accepts other weight formats; the engine runs a Hailo executable.
-MODEL_ARTIFACT_SUFFIXES = frozenset({".hef"})
+MODEL_ARTIFACT_SUFFIXES = COMPILED_MODEL_SUFFIXES
 MAX_FILES_INSPECTED = 20_000
 
 
@@ -53,25 +54,10 @@ def model_weights_available(workspace_root: Path) -> bool:
 
 
 def _contains_model_artifact(models_dir: Path) -> bool:
-    """True when `models_dir` holds a non-empty compiled model file. A
-    `.gitkeep`, a README or a tokenizer is not a model, symlinked files and
-    folders are not followed (the probe must stay inside the models tree),
-    and a filesystem error counts as "not present"."""
-    if not models_dir.is_dir() or models_dir.is_symlink():
-        return False
-    visited = 0
-    try:
-        for root, _dirs, files in os.walk(models_dir, followlinks=False):
-            for name in files:
-                visited += 1
-                if visited > MAX_FILES_INSPECTED:
-                    return False
-                path = Path(root) / name
-                if path.suffix.lower() in MODEL_ARTIFACT_SUFFIXES and not path.is_symlink() and path.stat().st_size > 0:
-                    return True
-    except OSError:
-        return False
-    return False
+    """True when `models_dir` holds a non-empty compiled model file. A `.gitkeep`, a README or a tokenizer is not a model, symlinked
+    files and folders are not followed (the probe must stay inside the models tree), and a filesystem error counts as "not present".
+    The walk is the one the family shares (`model_weights.py`, vendored byte for byte from the shared SDK)."""
+    return contains_model_artifact(models_dir, MODEL_ARTIFACT_SUFFIXES, MAX_FILES_INSPECTED)
 
 
 class EngineMode(str, enum.Enum):
