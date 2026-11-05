@@ -130,8 +130,8 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         if self.serve_metrics(authorized=authorized(self, self.server.token)):
             return
-        # the health path of the manifest stays open so the service registry can probe the service without the token
-        if urlparse(self.path).path != HEALTH_PATH and not authorized(self, self.server.token):
+        # the health path of the manifest stays open so the service registry can probe the service without the token, unless the identity of HYDRA-UMC-SERVER is on: then nothing is open
+        if (urlparse(self.path).path != HEALTH_PATH or self.server.identity_key is not None) and not authorized(self, self.server.token):
             reject(self)
             return
         path = urlparse(self.path).path

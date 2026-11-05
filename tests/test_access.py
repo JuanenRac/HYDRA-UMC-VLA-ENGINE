@@ -174,3 +174,11 @@ def test_with_the_identity_on_a_token_of_the_server_is_accepted_and_nothing_is_o
     with _running_with_identity(TOKEN, IDENTITY_KEY) as base:
         assert _call(f"{base}/nothing", TOKEN) == 404  # the own token keeps working
         assert _call(f"{base}/nothing", _signed_token("admin")) == 404
+
+
+def test_with_the_identity_on_not_even_the_health_path_is_open() -> None:
+    with _running_with_identity("", None) as base:
+        assert _call(f"{base}/health", None) != 401  # open while the identity is off
+    with _running_with_identity("", IDENTITY_KEY) as base:
+        assert _call(f"{base}/health", None) == 401
+        assert _call(f"{base}/health", _signed_token("viewer")) != 401

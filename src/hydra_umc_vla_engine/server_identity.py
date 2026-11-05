@@ -24,24 +24,33 @@ any of the three roles; a request that changes something needs `admin` or `opera
 password, a deleted account): keep `JWT_EXPIRES_IN` of the SERVER short for the accounts that call services. The key is shared with the services that verify, because the
 signature is symmetric: a service that can verify a token could also forge one, so the key file must be readable only by the group of that service.
 
+With the key on, `GET /health` and `GET /stats` need an identity too: nothing is open. The probe of a container therefore signs a short-lived token of its own with the same key
+file (`python -m <package>.server_identity probe --port PORT [--path /health]`, exit 0 when the service answers 200), which never leaves the machine and needs no
+token of the SERVER.
+
 The service takes the key at start (`identity_key_from`), keeps it on its server object, and asks `accepts(handler, own_token, key)` where it used to compare the token.
 """
 from __future__ import annotations
 
+import argparse
 import base64
 import binascii
 import hmac
 import json
+import math
 import os
 import time
 from dataclasses import dataclass
 from hashlib import sha256
 from http.server import BaseHTTPRequestHandler
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 _PACKAGE = (__package__ or __name__).split(".", 1)[0]
 ENV_IDENTITY_KEY_FILE = f"{_PACKAGE.upper()}_IDENTITY_KEY_FILE"
 MIN_KEY_LENGTH = 32
 MAX_TOKEN_CHARS = 4096
+IAT_SKEW_SECONDS = 5  # clock difference tolerated for an `iat` in the future, as the SERVER does
 ROLES = ("admin", "operator", "viewer")
 WRITE_ROLES = frozenset({"admin", "operator"})
 READ_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
@@ -110,13 +119,16 @@ def verify_token(token: str | None, key: bytes, *, now: float | None = None) -> 
     claims = _json_part(parts[1])
     moment = time.time() if now is None else now
     exp = claims.get("exp")
-    if isinstance(exp, bool) or not isinstance(exp, (int, float)):
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)) or not math.isfinite(exp):  # NaN compares false with everything: it would never expire
         raise IdentityError("the token has no expiry")
     if exp <= moment:
         raise IdentityError("the token has expired")
     nbf = claims.get("nbf")
-    if nbf is not None and (isinstance(nbf, bool) or not isinstance(nbf, (int, float)) or nbf > moment):
+    if nbf is not None and (isinstance(nbf, bool) or not isinstance(nbf, (int, float)) or not math.isfinite(nbf) or nbf > moment):
         raise IdentityError("the token is not valid yet")
+    iat = claims.get("iat")
+    if iat is not None and (isinstance(iat, bool) or not isinstance(iat, (int, float)) or not math.isfinite(iat) or iat > moment + IAT_SKEW_SECONDS):
+        raise IdentityError("the token was issued in the future")
     username, role = claims.get("username"), claims.get("role")
     if not isinstance(username, str) or not username:
         raise IdentityError("the token names no user")
@@ -153,3 +165,45 @@ def accepts(handler: BaseHTTPRequestHandler, own_token: str, key: bytes | None) 
         return False
     handler.identity = identity  # type: ignore[attr-defined]
     return True
+
+
+def sign_token(key: bytes, username: str = "health-probe", role: str = "viewer", ttl_seconds: int = 60, *, now: float | None = None) -> str:
+    """A short-lived token of the SERVER format, signed with the shared key (what the probe of a container presents; a viewer can only read)."""
+    def part(data: bytes) -> str:
+        return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+    moment = time.time() if now is None else now
+    head = part(json.dumps({"alg": "HS256", "typ": "JWT"}).encode("utf-8"))
+    body = part(json.dumps({"username": username, "role": role, "exp": int(moment) + ttl_seconds}).encode("utf-8"))
+    signature = hmac.new(key, f"{head}.{body}".encode("ascii"), sha256).digest()
+    return f"{head}.{body}.{part(signature)}"
+
+
+def probe(port: int, path: str = "/health", key_file: str | None = None, host: str = "127.0.0.1", timeout: float = 3.0) -> bool:
+    """Ask the service on this machine for `path`, presenting a token signed with the identity key when one is configured; True when it answers 200."""
+    key = identity_key_from(key_file)
+    headers = {"Authorization": f"Bearer {sign_token(key)}"} if key is not None else {}
+    try:
+        with urlopen(Request(f"http://{host}:{port}{path}", headers=headers), timeout=timeout) as response:  # noqa: S310 - http on loopback by design
+            return response.status == 200
+    except (URLError, OSError, ValueError):
+        return False
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog=f"python -m {_PACKAGE}.server_identity", description="Health probe for a service whose identity of HYDRA-UMC-SERVER is on.")
+    parser.add_argument("command", choices=("probe",))
+    parser.add_argument("--port", type=int, required=True)
+    parser.add_argument("--path", default="/health")
+    parser.add_argument("--key-file", default=None, help=f"the identity key file (or {ENV_IDENTITY_KEY_FILE})")
+    parser.add_argument("--host", default="127.0.0.1")
+    args = parser.parse_args(argv)
+    try:
+        return 0 if probe(args.port, args.path, args.key_file, args.host) else 1
+    except ValueError as error:
+        print(f"error: {error}")
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
