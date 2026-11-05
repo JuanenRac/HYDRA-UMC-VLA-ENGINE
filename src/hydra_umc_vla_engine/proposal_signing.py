@@ -245,14 +245,25 @@ def verify_proposal_ed25519(
     of the time, the robot, the model and the instruction are those of `verify_proposal`.
     """
     now = int(time.time() * 1000) if now_ms is None else now_ms
-    fingerprint, robot_id, signature, key_id = (proposal.get(name) for name in ("fingerprint", "robot_id", "signature", "key_id"))
-    issued, expires = proposal.get("issued_at_ms"), proposal.get("expires_at_ms")
-    model_version, instruction = proposal.get("model_version", ""), proposal.get("instruction_sha256", "")
-    if not all(isinstance(v, str) for v in (fingerprint, robot_id, signature, key_id, model_version, instruction)):
+    fingerprint = proposal.get("fingerprint")
+    robot_id = proposal.get("robot_id")
+    signature = proposal.get("signature")
+    key_id = proposal.get("key_id")
+    issued = proposal.get("issued_at_ms")
+    expires = proposal.get("expires_at_ms")
+    model_version = proposal.get("model_version", "")
+    instruction = proposal.get("instruction_sha256", "")
+    if not (
+        isinstance(fingerprint, str) and isinstance(robot_id, str) and isinstance(signature, str) and isinstance(key_id, str)
+        and isinstance(model_version, str) and isinstance(instruction, str)
+    ):
         return False, "the proposal is not signed"
     if proposal.get("signature_alg") != "ed25519":
         return False, "the proposal is not signed with ed25519"
-    if any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in (issued, expires)):
+    if (
+        isinstance(issued, bool) or not isinstance(issued, int) or issued <= 0
+        or isinstance(expires, bool) or not isinstance(expires, int) or expires <= 0
+    ):
         return False, "the proposal has no valid time window"
     public = public_keys.get(key_id)
     if public is None:
