@@ -25,7 +25,7 @@ from . import __version__
 from .action_tokens import DEFAULT_VOCAB_SIZE, TokenizationError, decode_action, encode_action
 from .access import bind_problem, load_token
 from .server_identity import identity_key_from
-from .proposal_signing import ProposalKeyError, load_key, sign_proposal
+from .proposal_signing import ProposalKeyError, load_ed25519_seed, load_key, sign_proposal
 from .api import VlaEngineServer
 from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
 from .hardware import EngineMode, check_engine_status
@@ -181,7 +181,8 @@ def _cmd_serve(args: argparse.Namespace) -> int:
             print("error: --proposal-key-file needs --robot-id: a signed proposal is for one robot", file=sys.stderr)
             return 2
         try:
-            signer = (load_key(args.proposal_key_file), args.robot_id, int(args.proposal_valid_seconds * 1000))
+            key = load_ed25519_seed(args.proposal_key_file) if args.proposal_signing == "ed25519" else load_key(args.proposal_key_file)
+            signer = (key, args.robot_id, int(args.proposal_valid_seconds * 1000))
             sign_proposal(signer[0], "0" * 64, signer[1], validity_ms=signer[2])
         except (ProposalKeyError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -199,6 +200,9 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     if confirmation.enabled:
         if signer is None:
             print("error: the confirmation of proposals needs --proposal-key-file and --robot-id: the approval is signed with that key for that robot", file=sys.stderr)
+            return 2
+        if args.proposal_signing == "ed25519":
+            print("error: the confirmation of proposals is signed with a shared (HMAC) key: it does not go with --proposal-signing ed25519", file=sys.stderr)
             return 2
         confirmations = ConfirmationStore(confirmation, signer[0], signer[1])
     try:
@@ -277,6 +281,8 @@ def _build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--port", type=int, default=8098, help="port for the HTTP API")
     serve.add_argument("--proposal-key-file", default=None, dest="proposal_key_file",
                        help="file with the key that signs every trajectory proposal for --robot-id and a short time window (off by default: the proposal only carries its fingerprint)")
+    serve.add_argument("--proposal-signing", choices=("hmac", "ed25519"), default="hmac", dest="proposal_signing",
+                       help="how a proposal is signed: hmac (a shared key, the default) or ed25519 (--proposal-key-file then holds a 32-byte seed in hex, and whoever checks needs only the public key)")
     serve.add_argument("--robot-id", default="", dest="robot_id", help="the robot the signed proposals are for (needed with --proposal-key-file)")
     serve.add_argument("--model-version", default="", dest="model_version",
                        help="the version of the model that produces the actions; with --proposal-key-file it is signed into every proposal")

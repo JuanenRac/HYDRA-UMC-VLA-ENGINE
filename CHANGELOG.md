@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **A trajectory proposal can be signed with Ed25519, so that whoever checks holds no secret:** `serve --proposal-signing ed25519` (the key file holds a 32-byte seed) adds `signature_alg`, `key_id` and a 128-character `signature`, and `verify_proposal_ed25519()` checks it with the public key alone, from a file of public keys by id that the server reads too. It refuses the same things as the shared-key check and a key that is not listed; the algorithm is chosen by the checker, never by the proposal. A fixed vector is checked on both sides. 10 new tests (292 in all).
+
 - **The build test of the repository compiles only on CI or when allowed:** for the stacks that compile (`rust`, `go`, `android`, `flutter`, `firmware-c`), `tools/build_test.py` prints `BUILD_TEST=SKIPPED` with exit status 2 on a plain PC, never a pass; `ALLOW_LOCAL_BUILD=1` allows it and a CI runner always may. The `python` and `node` stacks are not locked.
 
 ## [0.2.2] - With the identity of HYDRA-UMC-SERVER on, nothing is open: the health path of the service and GET /health ask for an identity too, and a token of the server whose expiry is not a finite number, or that was issued in the... (and 3 more changes)
