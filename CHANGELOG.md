@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.2] - With the identity of HYDRA-UMC-SERVER on, nothing is open: the health path of the service and GET /health ask for an identity too, and a token of the server whose expiry is not a finite number, or that was issued in the... (and 3 more changes)
+
 - **With the identity of HYDRA-UMC-SERVER on, nothing is open:** the health path of the service and `GET /health` ask for an identity too, and a token of the server whose expiry is not a finite number, or that was issued in the future, is refused. `python -m hydra_umc_vla_engine.server_identity probe --port PORT --key-file FILE` is the probe of a container: it signs a short-lived token of its own with the key file. Without the switch nothing changes.
 
 - **The identity of HYDRA-UMC-SERVER, off by default (`serve --identity-key-file FILE`, or `HYDRA_UMC_VLA_ENGINE_IDENTITY_KEY_FILE`):** the service verifies the signed token (HS256 JWT with `exp`, `username` and `role`) that the server issues at login and accepts it next to its own token. A viewer may read but not change, a request with no credential is refused even on loopback, and an address that is not loopback no longer needs a token of the service. The key is the signing key of the server, read from a file that only the group of the service may read, at least 32 characters; without the switch nothing changes. `server_identity.py` is the canonical copy of the SDK. 2 tests.
