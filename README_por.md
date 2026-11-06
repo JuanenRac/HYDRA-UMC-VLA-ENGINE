@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
   <img src="https://img.shields.io/badge/Tests-292%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.2.2-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.2.3-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -33,7 +33,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Versão | `0.2.2` |
+| Versão | `0.2.3` |
 | Maturidade | Funcional |
 | Testes | 292 (`python -m pytest -q tests`) |
 | Tecnologia | Python / Vision-Language-Action model |
@@ -165,7 +165,7 @@ run.bat
 `build.sh`/`build.bat` nunca alteram a versão (só `python tools/hydra_project_tool.py bump` a sobe). Saída esperada de `run.sh` (invocação simples):
 
 ```text
-HYDRA-UMC-VLA-ENGINE v0.2.2
+HYDRA-UMC-VLA-ENGINE v0.2.3
 Vision-Language-Action engine (Hailo-10) - translates camera frames and text instructions into robotic action sequences.
 ```
 
