@@ -11,7 +11,6 @@ has run against a real Hailo-8.
 """
 from __future__ import annotations
 
-import hashlib
 import sys
 import types
 from pathlib import Path
