@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The Hailo boundary is tested end to end against a stand-in `hailo_platform`:** `tests/test_hailo_runtime_fake_device.py` opens a virtual device, loads a model with one input and one output on the PCIe interface, hands the stream parameters of the group to the model and refuses any other number of streams. Simulator evidence only; the byte layout of the output of a real compiled model and a real Hailo-8 are still untried.
+
 ## [0.2.3] - A trajectory proposal can be signed with Ed25519, so that whoever checks holds no secret: serve --proposal-signing ed25519 (the key file holds a 32-byte seed) adds signaturealg, keyid and a 128-character signature, and... (and 1 more changes)
 
 - **A trajectory proposal can be signed with Ed25519, so that whoever checks holds no secret:** `serve --proposal-signing ed25519` (the key file holds a 32-byte seed) adds `signature_alg`, `key_id` and a 128-character `signature`, and `verify_proposal_ed25519()` checks it with the public key alone, from a file of public keys by id that the server reads too. It refuses the same things as the shared-key check and a key that is not listed; the algorithm is chosen by the checker, never by the proposal. A fixed vector is checked on both sides. 10 new tests (292 in all).
