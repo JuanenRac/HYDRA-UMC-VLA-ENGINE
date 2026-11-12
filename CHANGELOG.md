@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **README: the platform statement:** a note says that where the README speaks of the CM5 it means the pilot bench that runs today, and that the target platform of HYDRA-UMC, an NVIDIA Jetson Orin NX 16 GB, is a design that has not been built or tested.
 - **The Hailo boundary is tested end to end against a stand-in `hailo_platform`:** `tests/test_hailo_runtime_fake_device.py` opens a virtual device, loads a model with one input and one output on the PCIe interface, hands the stream parameters of the group to the model and refuses any other number of streams. Simulator evidence only; the byte layout of the output of a real compiled model and a real Hailo-8 are still untried.
 
 ## [0.2.3] - A trajectory proposal can be signed with Ed25519, so that whoever checks holds no secret: serve --proposal-signing ed25519 (the key file holds a 32-byte seed) adds signaturealg, keyid and a 128-character signature, and... (and 1 more changes)

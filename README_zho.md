@@ -93,6 +93,8 @@ GPL-3.0-or-later - see LICENSE
 
 **HYDRA-UMC-VLA-ENGINE** 包含视觉-语言-动作引擎中不需要模型的部分：把动作转换为离散令牌并还原，把预测的步骤积分成轨迹，以及根据工作空间、速度限制、安全区域和夹爪范围裁剪或拒绝轨迹的守卫。目前还没有模型运行；Hailo-10 边界只报告现有的东西。
 
+> **平台：** 本 README 中的 CM5 指的是目前正在运行的试验台；HYDRA-UMC 的目标平台是 NVIDIA Jetson Orin NX 16 GB，这是尚未制造或测试的设计。
+
 ## 🏛️ 架构
 
 <p align="center">

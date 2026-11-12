@@ -97,6 +97,8 @@ L'obiettivo è che il robot comprenda comandi come «prendi il componente blu e 
 
 **HYDRA-UMC-VLA-ENGINE** contiene le parti di un motore visione-linguaggio-azione che non richiedono un modello: convertire azioni in token discreti e viceversa, integrare i passi previsti in una traiettoria, e una guardia che ritaglia o rifiuta una traiettoria rispetto al volume di lavoro, ai limiti di velocità, alle zone di sicurezza e all'intervallo della pinza. Nessun modello gira ancora; il confine con Hailo-10 riferisce solo ciò che è presente.
 
+> **Piattaforma:** dove questo README dice CM5, intende il banco pilota che funziona oggi; la piattaforma di destinazione di HYDRA-UMC è un NVIDIA Jetson Orin NX da 16 GB, un progetto non costruito né provato.
+
 ## 🏛️ Architettura
 
 <p align="center">

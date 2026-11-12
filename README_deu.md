@@ -96,6 +96,8 @@ Ziel ist, dass der Roboter Befehle wie „nimm das blaue Bauteil und lege es auf
 
 **HYDRA-UMC-VLA-ENGINE** enthält die Teile einer Vision-Language-Action-Engine, die kein Modell brauchen: Aktionen in diskrete Tokens und zurück umwandeln, die vorhergesagten Schritte zu einer Trajektorie integrieren und eine Schutzprüfung, die eine Trajektorie anhand von Arbeitsvolumen, Geschwindigkeitsgrenzen, Sicherheitszonen und Greiferbereich beschneidet oder ablehnt. Noch läuft kein Modell; die Hailo-10-Grenze meldet nur, was vorhanden ist.
 
+> **Plattform:** Wo dieses README CM5 sagt, ist der Pilotprüfstand gemeint, der heute läuft; die Zielplattform von HYDRA-UMC ist ein NVIDIA Jetson Orin NX 16 GB, ein Entwurf, der weder gebaut noch getestet wurde.
+
 ## 🏛️ Architektur
 
 <p align="center">
