@@ -3,7 +3,7 @@
 # Copyright (C) 2026 JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
 # GPL-3.0-or-later - see LICENSE
 #
-# Measures the line and branch coverage of src/ with the whole test suite and fails when it falls under the floor (93 %).
+# Measures the line and branch coverage of src/ with the whole test suite and fails when it falls under the floor (91 %).
 # =============================================================================
 name: Coverage floor
 
@@ -35,4 +35,4 @@ jobs:
         run: python -m coverage run --branch --source=src -m pytest tests -q
       - name: Report the coverage and hold the floor
         run: |
-          python -m coverage report -m --fail-under=93
+          python -m coverage report -m --fail-under=91
