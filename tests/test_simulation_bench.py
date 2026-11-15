@@ -231,7 +231,7 @@ def test_every_way_of_confirming_that_is_not_the_operator_who_saw_the_summary_is
     assert unprepared.value.status == 409
     token_one = store.prepare(one, "ana")["confirmationToken"]
     token_two = store.prepare(two, "ana")["confirmationToken"]
-    for operator, token, status in (("ana", token_two, 403), ("luis", token_one, 403), ("ana", token_one[:-1] + "0", 403), ("ana", "nodots", 400), ("ana", 5, 400), ("", token_one, 400)):
+    for operator, token, status in (("ana", token_two, 403), ("luis", token_one, 403), ("ana", token_one[:-1] + ("1" if token_one[-1] == "0" else "0"), 403), ("ana", "nodots", 400), ("ana", 5, 400), ("", token_one, 400)):
         with pytest.raises(ConfirmationError) as refused:
             store.confirm(one, operator, token)
         assert refused.value.status == status, (operator, status)
