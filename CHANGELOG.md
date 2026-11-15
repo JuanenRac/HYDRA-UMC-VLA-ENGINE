@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The simulation bench no longer fails by chance:** the case that corrupts the last character of a confirmation token now always changes it (the signature ended in the same character one time in sixteen, which left the token valid).
 - **The SDK pin and the shared tools are up to date:** the SDK dependency names the newest release tag, and the shared tools are the canonical copies again.
 - **A simulation bench for the engine:** `tests/test_simulation_bench.py` runs the real tokens, trajectory, guard and confirmation against a simulated model (smooth, noisy, runaway, saturated, walking toward a person, out of range, not a number, the wrong length), a simulated cell (a work volume with a danger and a warning zone) and a simulated operator (confirming once, twice, late, as someone else or with the token of another proposal), and states what must hold for every proposal whatever the model does. The workflow "Simulation bench" runs it on every change and `docs/SIMULATION.md` describes it. The manifest now declares the evidence level `simulator`.
 - **The coverage of the tests is measured on every change:** the workflow "Coverage floor" runs the whole suite under line and branch coverage and fails when it falls under 91 %.
