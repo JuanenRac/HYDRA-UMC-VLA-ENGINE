@@ -4,6 +4,9 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+
+## [0.2.4]
+
 - **The simulation bench no longer fails by chance:** the case that corrupts the last character of a confirmation token now always changes it (the signature ended in the same character one time in sixteen, which left the token valid).
 - **The SDK pin and the shared tools are up to date:** the SDK dependency names the newest release tag, and the shared tools are the canonical copies again.
 - **A simulation bench for the engine:** `tests/test_simulation_bench.py` runs the real tokens, trajectory, guard and confirmation against a simulated model (smooth, noisy, runaway, saturated, walking toward a person, out of range, not a number, the wrong length), a simulated cell (a work volume with a danger and a warning zone) and a simulated operator (confirming once, twice, late, as someone else or with the token of another proposal), and states what must hold for every proposal whatever the model does. The workflow "Simulation bench" runs it on every change and `docs/SIMULATION.md` describes it. The manifest now declares the evidence level `simulator`.
@@ -13,6 +16,8 @@ All notable changes to this project are documented here.
 
 - **README: the platform statement:** a note says that where the README speaks of the CM5 it means the pilot bench that runs today, and that the target platform of HYDRA-UMC, an NVIDIA Jetson Orin NX 16 GB, is a design that has not been built or tested.
 - **The Hailo boundary is tested end to end against a stand-in `hailo_platform`:** `tests/test_hailo_runtime_fake_device.py` opens a virtual device, loads a model with one input and one output on the PCIe interface, hands the stream parameters of the group to the model and refuses any other number of streams. Simulator evidence only; the byte layout of the output of a real compiled model and a real Hailo-8 are still untried.
+
+- Build version synchronized with `hydra-umc.project.json` and the repository-native version source.
 
 ## [0.2.3] - A trajectory proposal can be signed with Ed25519, so that whoever checks holds no secret: serve --proposal-signing ed25519 (the key file holds a 32-byte seed) adds signaturealg, keyid and a 128-character signature, and... (and 1 more changes)
 
