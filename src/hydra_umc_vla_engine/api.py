@@ -223,13 +223,21 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
         if not isinstance(body, dict):
             _write_error(self, 400, "the body must be a JSON object")
             return
+        operator = body.get("operator")
+        identity = getattr(self, "identity", None)
+        if self.server.identity_key is not None and identity is not None:
+            # The person is the one who signed in with the identity of the SERVER: the body cannot name somebody else.
+            if operator is not None and operator != identity.username:
+                _write_error(self, 403, "operator is not the person who is signed in")
+                return
+            operator = identity.username
         try:
             if action == "prepare":
-                result = store.prepare(pending_id, body.get("operator"))
+                result = store.prepare(pending_id, operator)
             elif action == "confirm":
-                result = store.confirm(pending_id, body.get("operator"), body.get("confirmationToken"))
+                result = store.confirm(pending_id, operator, body.get("confirmationToken"))
             elif action == "reject":
-                result = store.reject(pending_id, body.get("operator"))
+                result = store.reject(pending_id, operator)
             else:
                 _write_error(self, 404, "not found")
                 return

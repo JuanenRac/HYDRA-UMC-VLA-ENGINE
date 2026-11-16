@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **With the identity of the server on, the confirmation of a proposal is made by the person who is signed in:** the operator of the steps prepare, confirm and reject is taken from the signed token, a body that names somebody else is refused with 403, and a body without a name uses the signed-in person. A test covers the three steps.
 
 ## [0.2.4]
 
