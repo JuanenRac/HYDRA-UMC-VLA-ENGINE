@@ -336,6 +336,27 @@ def test_the_whole_flow_over_http(tmp_path: Path) -> None:
         assert _call(base + "/confirmations/x/prepare", {"operator": 5}, "t" * 16)[0] in (400, 404)
 
 
+def test_with_the_identity_of_the_server_the_operator_is_the_person_signed_in(tmp_path: Path) -> None:
+    from hydra_umc_vla_engine import server_identity as si
+
+    key = b"a-signing-key-of-more-than-32-characters!"
+    bearer = si.sign_token(key, "ana", "operator")
+    for base, server in _serve(tmp_path, confirmations=_store()):
+        server.identity_key = key
+        status, answer = _integrate(base, bearer)
+        assert status == 200
+        pending_id = answer["proposal"]["confirmation"]["pending_id"]
+        # naming somebody else is refused, in every step
+        for step in ("prepare", "reject"):
+            assert _call(base + f"/confirmations/{pending_id}/{step}", {"operator": "luis"}, bearer)[0] == 403
+        assert _call(base + f"/confirmations/{pending_id}/confirm", {"operator": "luis", "confirmationToken": "a.b"}, bearer)[0] == 403
+        # without a name, or with the own one, the signed-in person is the operator
+        status, prepared = _call(base + f"/confirmations/{pending_id}/prepare", {}, bearer)
+        assert status == 200
+        status, approval = _call(base + f"/confirmations/{pending_id}/confirm", {"operator": "ana", "confirmationToken": prepared["confirmationToken"]}, bearer)
+        assert status == 200 and approval["approved"] is True and approval["operator"] == "ana"
+
+
 # ------------------------------------------------------------------------------------------------ the shared HTTP module
 
 
