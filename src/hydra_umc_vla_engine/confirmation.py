@@ -22,6 +22,10 @@ has to come under the same name. At most `max_pending` proposals wait at the sam
 It is off unless the `confirmation` section of the configuration file says `"enabled": true`, and it needs the key of the signed proposals (`--proposal-key-file`):
 
     {"confirmation": {"enabled": true, "ttl_seconds": 60, "token_seconds": 30, "max_pending": 16, "approval_validity_ms": 10000}}
+
+With `single_use` (off by default) the approval also carries `approval_id`, a random identity inside the signed message (the form `v2`), and the layer that executes keeps an
+`ApprovalLedger` and checks with `verify_approval_once`, so the same approval cannot be presented twice. An approval of the first form is still accepted by
+`verify_approval_once` unless it is told `require_id=True`.
 """
 from __future__ import annotations
 
@@ -44,9 +48,10 @@ from typing import Any
 from .trajectory import Pose
 
 CONFIG_ENV = "HYDRA_UMC_VLA_ENGINE_CONFIG"
-_KEYS = {"enabled", "ttl_seconds", "token_seconds", "max_pending", "approval_validity_ms", "when_full"}
+_KEYS = {"enabled", "ttl_seconds", "token_seconds", "max_pending", "approval_validity_ms", "when_full", "single_use"}
 WHEN_FULL = ("drop_oldest", "refuse")
 _OPERATOR = re.compile(r"[A-Za-z0-9_.:@-]{1,64}")
+_APPROVAL_ID = re.compile(r"[0-9a-f]{16,64}")
 MAX_APPROVAL_VALIDITY_MS = 600_000
 
 
@@ -70,6 +75,7 @@ class ConfirmationPolicy:
     max_pending: int = 16
     approval_validity_ms: int = 10_000
     when_full: str = "drop_oldest"
+    single_use: bool = False
 
     def __post_init__(self) -> None:
         for name, value, low, high in (("ttl_seconds", self.ttl_seconds, 1.0, 3600.0), ("token_seconds", self.token_seconds, 1.0, 600.0)):
@@ -83,6 +89,8 @@ class ConfirmationPolicy:
             raise ConfirmationConfigError(f"confirmation.when_full must be one of {', '.join(WHEN_FULL)}")
         if not isinstance(self.enabled, bool):
             raise ConfirmationConfigError("confirmation.enabled must be true or false")
+        if not isinstance(self.single_use, bool):
+            raise ConfirmationConfigError("confirmation.single_use must be true or false")
 
 
 def load_confirmation_policy(path: str | os.PathLike[str] | None = None) -> ConfirmationPolicy:
@@ -122,8 +130,11 @@ def _part(text: str) -> bytes:
     return str(len(raw)).encode("ascii") + b":" + raw
 
 
-def _approval_message(fingerprint: str, robot_id: str, operator: str, approved_at_ms: int, expires_at_ms: int) -> bytes:
-    return b"".join(_part(p) for p in ("hydra-umc-vla-approval-v1", fingerprint, robot_id, operator, str(approved_at_ms), str(expires_at_ms)))
+def _approval_message(fingerprint: str, robot_id: str, operator: str, approved_at_ms: int, expires_at_ms: int, approval_id: str | None = None) -> bytes:
+    if approval_id is None:
+        return b"".join(_part(p) for p in ("hydra-umc-vla-approval-v1", fingerprint, robot_id, operator, str(approved_at_ms), str(expires_at_ms)))
+    # the second form carries an identity of its own, so that the layer that executes can accept an approval only once
+    return b"".join(_part(p) for p in ("hydra-umc-vla-approval-v2", fingerprint, robot_id, operator, str(approved_at_ms), str(expires_at_ms), approval_id))
 
 
 def verify_approval(key: bytes, approval: dict, *, expected_fingerprint: str, expected_robot_id: str, now_ms: int | None = None) -> tuple[bool, str]:
@@ -133,7 +144,10 @@ def verify_approval(key: bytes, approval: dict, *, expected_fingerprint: str, ex
     if not all(isinstance(v, str) for v in (fingerprint, robot, operator, signature)) or any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in (approved, expires)):
         return False, "the approval is not signed"
     assert isinstance(fingerprint, str) and isinstance(robot, str) and isinstance(operator, str) and isinstance(approved, int) and isinstance(expires, int)
-    expected = hmac.new(key, _approval_message(fingerprint, robot, operator, approved, expires), hashlib.sha256).hexdigest()
+    approval_id = approval.get("approval_id")
+    if approval_id is not None and (not isinstance(approval_id, str) or not _APPROVAL_ID.fullmatch(approval_id)):
+        return False, "the approval is not signed"
+    expected = hmac.new(key, _approval_message(fingerprint, robot, operator, approved, expires, approval_id), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected.encode("ascii"), str(signature).encode("utf-8", "replace")):
         return False, "the signature of the approval does not match"
     if fingerprint != expected_fingerprint:
@@ -144,6 +158,48 @@ def verify_approval(key: bytes, approval: dict, *, expected_fingerprint: str, ex
         return False, "the approval was given in the future"
     if now >= expires:
         return False, "the approval has expired"
+    return True, ""
+
+
+class ApprovalLedger:
+    """What the layer that executes keeps to accept an approval once: the identities it has seen, until the approval they came with would have expired anyway.
+
+    It is in memory (a restart forgets it, and an approval lives seconds). When it holds `max_entries` identities that have not expired it refuses new ones: it fails closed
+    and never forgets one that could still be presented.
+    """
+
+    def __init__(self, max_entries: int = 4096) -> None:
+        self._max = max_entries
+        self._seen: dict[str, int] = {}
+        self._lock = threading.Lock()
+
+    def accept(self, approval_id: str, expires_at_ms: int, now_ms: int) -> bool:
+        """True the first time an identity is presented, False for a repeat (or when the ledger is full of live identities)."""
+        with self._lock:
+            for old in [i for i, until in self._seen.items() if until <= now_ms]:
+                del self._seen[old]
+            if approval_id in self._seen or len(self._seen) >= self._max:
+                return False
+            self._seen[approval_id] = expires_at_ms
+            return True
+
+
+def verify_approval_once(key: bytes, approval: dict, *, expected_fingerprint: str, expected_robot_id: str, ledger: ApprovalLedger, require_id: bool = False,
+                         now_ms: int | None = None) -> tuple[bool, str]:
+    """`verify_approval`, and the approval is also refused when its identity was already presented to the ledger.
+
+    An approval of the first form (no identity, from an engine with `single_use` off) is accepted unless `require_id` is true: that is how a layer migrates without
+    stopping.
+    """
+    now = int(time.time() * 1000) if now_ms is None else now_ms
+    good, why = verify_approval(key, approval, expected_fingerprint=expected_fingerprint, expected_robot_id=expected_robot_id, now_ms=now)
+    if not good:
+        return False, why
+    approval_id = approval.get("approval_id")
+    if approval_id is None:
+        return (False, "the approval has no identity of its own") if require_id else (True, "")
+    if not ledger.accept(approval_id, int(approval["expires_at_ms"]), now):
+        return False, "the approval was already used"
     return True, ""
 
 
@@ -252,8 +308,12 @@ class ConfirmationStore:
             self.approved += 1
             now_ms = int(self._clock() * 1000)
             expires = now_ms + self.policy.approval_validity_ms
-            signature = hmac.new(self._key, _approval_message(pending.fingerprint, self.robot_id, name, now_ms, expires), hashlib.sha256).hexdigest()
-            return {"approved": True, "fingerprint": pending.fingerprint, "robot_id": self.robot_id, "operator": name, "approved_at_ms": now_ms, "expires_at_ms": expires, "signature": signature}
+            approval_id = secrets.token_hex(16) if self.policy.single_use else None
+            signature = hmac.new(self._key, _approval_message(pending.fingerprint, self.robot_id, name, now_ms, expires, approval_id), hashlib.sha256).hexdigest()
+            approval = {"approved": True, "fingerprint": pending.fingerprint, "robot_id": self.robot_id, "operator": name, "approved_at_ms": now_ms, "expires_at_ms": expires, "signature": signature}
+            if approval_id is not None:
+                approval["approval_id"] = approval_id
+            return approval
 
     def reject(self, pending_id: str, operator: object) -> dict[str, Any]:
         name = self._operator(operator)
