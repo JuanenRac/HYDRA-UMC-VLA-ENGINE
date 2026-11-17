@@ -142,13 +142,15 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
                 # only a folder inside the workspace the server was started with
                 requested = Path(params["workspace"])
                 try:
-                    inside = requested.resolve().is_relative_to(self.server.workspace.resolve())
+                    # the folder that was checked is the folder that is used
+                    resolved = requested.resolve()
+                    inside = resolved.is_relative_to(self.server.workspace.resolve())
                 except OSError:
                     inside = False
                 if not inside:
                     _write_error(self, 400, "workspace must be inside the workspace this server was started with")
                     return
-                workspace = requested
+                workspace = resolved
             status = check_engine_status(workspace)
             _write_json(self, 200, {
                 "acceleratorPresent": status.accelerator_present,
