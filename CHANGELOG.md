@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **An approval of a proposal can be accepted once (`confirmation.single_use`, off):** with the setting on, each approval carries a random `approval_id` inside the signed message, and `verify_approval_once` with an `ApprovalLedger` refuses an approval that was already presented until the time it was valid for has passed (the ledger refuses new identities rather than forget one that is still valid). Approvals without the identity, from an engine with the setting off, are still accepted unless the layer that executes asks for the identity with `require_id`. Tests cover the repeat, an approval of another trajectory or robot, the expiry and the full ledger.
+
 - **A proposal that a person is reviewing is not dropped to make room, and the full queue can refuse instead:** when `confirmation.max_pending` is reached, the oldest proposal whose token was not issued within `token_seconds` is dropped (never one being reviewed; if all are, the answer is 429), and the new option `confirmation.when_full` set to `refuse` answers 429 without dropping anything. The default `drop_oldest` keeps the earlier behaviour.
 
 - **The folder that is checked for `?workspace=` is the folder that is used:** the request path is resolved once, tested against the workspace of the server and then used as resolved, so a link that changes between the check and the use cannot lead outside it.

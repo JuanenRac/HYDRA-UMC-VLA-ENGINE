@@ -40,6 +40,7 @@
     "ttl_seconds": 60,
     "token_seconds": 30,
     "max_pending": 16,
-    "approval_validity_ms": 10000
+    "approval_validity_ms": 10000,
+    "single_use": false
   }
 }
