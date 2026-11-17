@@ -322,9 +322,13 @@ class Handler(MetricsHandlerMixin, BaseHTTPRequestHandler):
             answer["kinematics"] = kinematics_info
         if self.server.confirmations is not None:
             # the proposal waits for a person (two steps, confirmation.py); nothing here marks it as approved
-            proposal["confirmation"] = self.server.confirmations.create(
-                proposal["fingerprint"], summarize(poses, robot_id=self.server.confirmations.robot_id, guard=guard_info, kinematics=kinematics_info),
-            )
+            try:
+                proposal["confirmation"] = self.server.confirmations.create(
+                    proposal["fingerprint"], summarize(poses, robot_id=self.server.confirmations.robot_id, guard=guard_info, kinematics=kinematics_info),
+                )
+            except ConfirmationError as e:
+                _write_error(self, e.status, str(e))
+                return
         _write_json(self, 200, answer)
 
 

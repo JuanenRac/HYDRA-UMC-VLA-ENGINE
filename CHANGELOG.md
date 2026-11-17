@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **A proposal that a person is reviewing is not dropped to make room, and the full queue can refuse instead:** when `confirmation.max_pending` is reached, the oldest proposal whose token was not issued within `token_seconds` is dropped (never one being reviewed; if all are, the answer is 429), and the new option `confirmation.when_full` set to `refuse` answers 429 without dropping anything. The default `drop_oldest` keeps the earlier behaviour.
+
 - **The folder that is checked for `?workspace=` is the folder that is used:** the request path is resolved once, tested against the workspace of the server and then used as resolved, so a link that changes between the check and the use cannot lead outside it.
 - **With the identity of the server on, the confirmation of a proposal is made by the person who is signed in:** the operator of the steps prepare, confirm and reject is taken from the signed token, a body that names somebody else is refused with 403, and a body without a name uses the signed-in person. A test covers the three steps.
 

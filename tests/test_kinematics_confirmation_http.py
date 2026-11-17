@@ -381,3 +381,31 @@ def test_the_server_limits_the_requests_it_handles_at_the_same_time(tmp_path: Pa
             holder.close()
     with pytest.raises(ValueError):
         VlaEngineServer(("127.0.0.1", 0), tmp_path, max_threads=0)
+
+
+def test_a_proposal_that_is_being_reviewed_is_not_dropped_to_make_room() -> None:
+    clock = Clock()
+    store = _store(clock, max_pending=2, token_seconds=30.0)
+    first = store.create(f"{1:064d}", {})["pending_id"]
+    second = store.create(f"{2:064d}", {})["pending_id"]
+    store.prepare(first, "ana")  # the oldest is now being reviewed
+    third = store.create(f"{3:064d}", {})["pending_id"]
+    assert [p["pending_id"] for p in store.list()] == [first, third]  # the second, not the first, made room
+    store.prepare(third, "ana")
+    with pytest.raises(ConfirmationError) as full:
+        store.create(f"{4:064d}", {})
+    assert full.value.status == 429
+    clock.now += 31  # the tokens are old: the oldest may be dropped again
+    store.create(f"{5:064d}", {})
+    assert second not in [p["pending_id"] for p in store.list()]
+
+
+def test_when_full_refuse_answers_429_and_keeps_every_proposal() -> None:
+    store = _store(max_pending=2, when_full="refuse")
+    ids = [store.create(f"{n:064d}", {})["pending_id"] for n in range(2)]
+    with pytest.raises(ConfirmationError) as full:
+        store.create(f"{9:064d}", {})
+    assert full.value.status == 429
+    assert [p["pending_id"] for p in store.list()] == ids
+    with pytest.raises(ConfirmationConfigError):
+        ConfirmationPolicy(enabled=True, when_full="sometimes")
