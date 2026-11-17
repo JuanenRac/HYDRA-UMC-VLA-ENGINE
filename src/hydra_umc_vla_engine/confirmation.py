@@ -44,7 +44,8 @@ from typing import Any
 from .trajectory import Pose
 
 CONFIG_ENV = "HYDRA_UMC_VLA_ENGINE_CONFIG"
-_KEYS = {"enabled", "ttl_seconds", "token_seconds", "max_pending", "approval_validity_ms"}
+_KEYS = {"enabled", "ttl_seconds", "token_seconds", "max_pending", "approval_validity_ms", "when_full"}
+WHEN_FULL = ("drop_oldest", "refuse")
 _OPERATOR = re.compile(r"[A-Za-z0-9_.:@-]{1,64}")
 MAX_APPROVAL_VALIDITY_MS = 600_000
 
@@ -68,6 +69,7 @@ class ConfirmationPolicy:
     token_seconds: float = 30.0
     max_pending: int = 16
     approval_validity_ms: int = 10_000
+    when_full: str = "drop_oldest"
 
     def __post_init__(self) -> None:
         for name, value, low, high in (("ttl_seconds", self.ttl_seconds, 1.0, 3600.0), ("token_seconds", self.token_seconds, 1.0, 600.0)):
@@ -77,6 +79,8 @@ class ConfirmationPolicy:
             raise ConfirmationConfigError("confirmation.max_pending must be an integer from 1 to 256")
         if isinstance(self.approval_validity_ms, bool) or not isinstance(self.approval_validity_ms, int) or not 1 <= self.approval_validity_ms <= MAX_APPROVAL_VALIDITY_MS:
             raise ConfirmationConfigError(f"confirmation.approval_validity_ms must be an integer from 1 to {MAX_APPROVAL_VALIDITY_MS}")
+        if self.when_full not in WHEN_FULL:
+            raise ConfirmationConfigError(f"confirmation.when_full must be one of {', '.join(WHEN_FULL)}")
         if not isinstance(self.enabled, bool):
             raise ConfirmationConfigError("confirmation.enabled must be true or false")
 
@@ -173,8 +177,15 @@ class ConfirmationStore:
     def create(self, fingerprint: str, summary: dict[str, Any]) -> dict[str, Any]:
         with self._lock:
             self._expire()
+            now = self._clock()
             while len(self._pending) >= self.policy.max_pending:
-                self._pending.popitem(last=False)
+                if self.policy.when_full == "refuse":
+                    raise ConfirmationError("too many proposals are waiting for a person; confirm or reject one first", 429)
+                # the oldest proposal that is not being reviewed: one whose token was issued less than token_seconds ago is never dropped
+                victim = next((i for i, p in self._pending.items() if not (p.nonce and now - p.prepared <= self.policy.token_seconds)), None)
+                if victim is None:
+                    raise ConfirmationError("every waiting proposal is being reviewed; try again in a moment", 429)
+                del self._pending[victim]
             pending_id = secrets.token_hex(8)
             self._pending[pending_id] = _Pending(pending_id, fingerprint, summary, self._clock())
         return {"pending_id": pending_id, "status": "awaiting_confirmation", "expires_in_s": self.policy.ttl_seconds}
