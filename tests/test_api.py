@@ -247,3 +247,13 @@ def test_the_handler_has_a_socket_timeout() -> None:
     from hydra_umc_vla_engine.api import Handler
 
     assert Handler.timeout is not None and Handler.timeout > 0
+
+
+def test_a_workspace_with_dots_that_stays_inside_is_resolved_before_use(tmp_path: Path) -> None:
+    workspace = tmp_path / "ws"
+    (workspace / "sub").mkdir(parents=True)
+    with running_server(workspace) as base:
+        status, _ = _get(f"{base}/status?workspace={workspace / 'sub' / '..'}")
+        assert status == 200
+        status, _ = _get(f"{base}/status?workspace={workspace / '..' / 'elsewhere'}")
+        assert status == 400
