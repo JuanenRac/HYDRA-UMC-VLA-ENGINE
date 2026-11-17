@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-299%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-458%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.4-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Versión | `0.2.4` |
 | Madurez | Funcional |
-| Tests | 299 (`python -m pytest -q tests`) |
+| Tests | 458 (`python -m pytest -q tests`) |
 | Tecnología | Python / Vision-Language-Action model |
 | Destino | La Raspberry Pi CM5 de una celda HYDRA-UMC |
 | En hardware real | Solo simulado: probado con emuladores, dobles de prueba o simuladores; no consta ninguna ejecución en hardware real para esta versión |
@@ -51,15 +51,15 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 | Área | Estado | Qué significa aquí |
 |---|---|---|
 | Software | 🟡 | Funciona para su propósito principal; la comprobación de honestidad de este README lista lo que aún falta |
-| Pruebas | 🟢 | 299 pruebas automáticas, ejecutadas en cada cambio |
+| Pruebas | 🟢 | 458 pruebas automáticas, ejecutadas en cada cambio |
 | Hardware real | 🟠 | Solo simulado: probado con emuladores, dobles de prueba o simuladores; no consta ninguna ejecución en hardware real para esta versión |
 | Interfaz y protocolos | 🟡 | Las rutas o los mensajes que ofrece están documentados y probados con un cliente; aún no los han usado todos los clientes |
-| Integración | 🟠 | Funciona junto con los demás servicios en el banco de pruebas de la CM5 y sus mensajes siguen los contratos compartidos del SDK |
+| Integración | 🟠 | Sus mensajes y rutas se comprueban contra los contratos compartidos del SDK; no ha funcionado junto con el equipo real |
 | Seguridad | 🟡 | El control de acceso, los límites de entrada o las firmas están implementados y probados en un ordenador; nadie ajeno al proyecto los ha revisado |
 | Despliegue | 🟡 | Instalado como servicio en el banco de pruebas de la CM5 con su instalador y su unidad; se reinicia en cada actualización |
 | Operación | 🟡 | Expone /metrics en el formato de texto de Prometheus con un resumen de salud; todavía no está conectado a un panel de supervisión |
 | Actualizaciones | 🟡 | Se actualiza con HYDRA-UMC-UPDATER (trenes firmados, copias de seguridad y reversión probadas en un ordenador) |
-| Parada y seguridad | 🟠 | El camino de parada y sus límites están implementados y probados con simuladores; nunca han funcionado en una máquina real, y esto no es un sistema de seguridad certificado |
+| Parada y seguridad | 🟠 | Una parte del camino de parada está implementada y probada con simuladores; el resto aún no está conectado, así que no se puede confiar en que este programa detenga el equipo por sí solo |
 | Documentación | 🟢 | README en ocho idiomas, comprobado contra el manifiesto en cada cambio |
 
 ## 🎯 Resumen
@@ -191,7 +191,7 @@ Requiere Python 3.10 o superior.
 
 ## 🧪 Pruebas
 
-299 pruebas automáticas se ejecutan con `python -m pytest -q tests`. No necesitan hardware ni nada fuera de esta máquina.
+458 pruebas automáticas se ejecutan con `python -m pytest -q tests`. No necesitan hardware ni nada fuera de esta máquina.
 
 El CI ejecuta `HYDRA_UMC_CI=1 python tools/ci_validate.py`, que comprueba el manifiesto, los documentos, los ocho README y las imágenes.
 
@@ -315,7 +315,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### Estado Actual y Próximos Pasos
 
-**Real hoy:** la codificación/decodificación de tokens de acción y la generación de trayectoria (`action_tokens.py`, `trajectory.py`) - los pasos "Tokens de Acción" y "Generador de Trayectorias" del diagrama de flujo de arriba - más un límite de integración con HailoRT real (`hailo_runtime.py`) listo para un modelo `.hef` real y un módulo Hailo-10 en el momento en que existan. 299 tests y un CLI real.
+**Real hoy:** la codificación/decodificación de tokens de acción y la generación de trayectoria (`action_tokens.py`, `trajectory.py`) - los pasos "Tokens de Acción" y "Generador de Trayectorias" del diagrama de flujo de arriba - más un límite de integración con HailoRT real (`hailo_runtime.py`) listo para un modelo `.hef` real y un módulo Hailo-10 en el momento en que existan. 458 tests y un CLI real.
 
 **Todavía por delante, bloqueado por hardware real/un modelo real:** ejecutar de verdad la inferencia necesita un modelo VLA `.hef` realmente compilado (OpenVLA/RT-2 cuantizado para Hailo-10 - aún no se ha elegido un modelo concreto) y un módulo Hailo-10 físico conectado, ambos bloqueadores reales e inevitables que `hailo_runtime.py` no puede eliminar por sí solo - pero cargar y decodificar uno, una vez que exista, ya no es código sin escribir.
 

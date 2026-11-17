@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Model-OpenVLA%20%2F%20RT--2-orange.svg" alt="Model">
   <img src="https://img.shields.io/badge/Acceleration-Hailo--10-green.svg" alt="Acceleration">
-  <img src="https://img.shields.io/badge/Tests-299%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-458%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.4-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | 版本 | `0.2.4` |
 | 成熟度 | 可用 |
-| 测试 | 299 (`python -m pytest -q tests`) |
+| 测试 | 458 (`python -m pytest -q tests`) |
 | 技术栈 | Python / Vision-Language-Action model |
 | 目标 | HYDRA-UMC 工作单元的 Raspberry Pi CM5 |
 | 真实硬件 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
@@ -51,15 +51,15 @@ GPL-3.0-or-later - see LICENSE
 | 领域 | 状态 | 在这里的含义 |
 |---|---|---|
 | 软件 | 🟡 | 主要用途可用；本 README 中的诚实性检查列出了仍然缺少的内容 |
-| 测试 | 🟢 | 299 项自动测试，每次变更都会运行 |
+| 测试 | 🟢 | 458 项自动测试，每次变更都会运行 |
 | 真实硬件 | 🟠 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 | 接口与协议 | 🟡 | 提供的路由或消息已有文档，并用客户端测试过；尚未被所有客户端使用 |
-| 集成 | 🟠 | 在 CM5 测试台上与其他服务一起运行，其消息遵循 SDK 的共享契约 |
+| 集成 | 🟠 | 其消息和路由已对照 SDK 的共享契约检查；尚未与真实设备一起运行 |
 | 安全性 | 🟡 | 访问控制、输入限制或签名已实现并在计算机上测试；项目之外无人审查过 |
 | 部署 | 🟡 | 作为服务安装在 CM5 测试台上，带有安装脚本和单元；每次更新都会重启 |
 | 运维 | 🟡 | 以 Prometheus 文本格式提供 /metrics 和健康摘要；尚未接入监控面板 |
 | 更新 | 🟡 | 通过 HYDRA-UMC-UPDATER 更新（签名的发布列车、备份和回滚已在计算机上测试） |
-| 停止与安全 | 🟠 | 停止路径及其限制已实现并用模拟器测试；从未在真实机器上运行，这也不是经过认证的安全系统 |
+| 停止与安全 | 🟠 | 停止路径的一部分已实现并用模拟器测试；其余部分尚未接通，因此不能依赖本程序自行停止设备 |
 | 文档 | 🟢 | 八种语言的 README，每次变更都会与清单核对 |
 
 ## 🎯 概述
@@ -147,7 +147,7 @@ flowchart LR
 
 ## 🧪 测试
 
-运行 `python -m pytest -q tests` 会执行 299 个自动测试。 不需要硬件，也不需要这台机器以外的任何东西。
+运行 `python -m pytest -q tests` 会执行 458 个自动测试。 不需要硬件，也不需要这台机器以外的任何东西。
 
 CI 运行 `HYDRA_UMC_CI=1 python tools/ci_validate.py`，检查清单、文档、八个 README 和图片。
 
@@ -256,7 +256,7 @@ HYDRA-UMC-VLA-ENGINE/
 
 ### 当前状态与后续步骤
 
-**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 299 个测试和一个真实的 CLI。
+**今天的真实进展：** 动作令牌编码/解码与轨迹生成(`action_tokens.py`、`trajectory.py`)——上方流程图中的"动作令牌"与"轨迹生成器"步骤——外加一个真实的 HailoRT 集成边界(`hailo_runtime.py`),已准备好在真实的 `.hef` 模型和 Hailo-10 模块出现的那一刻使用。共 458 个测试和一个真实的 CLI。
 
 **仍待完成，受限于真实硬件/真实模型：** 要真正运行推理,需要一个真实编译好的 VLA `.hef` 模型(为 Hailo-10 量化的 OpenVLA/RT-2——目前尚未选定具体模型)以及一块连接好的物理 Hailo-10 模块,这两者都是 `hailo_runtime.py` 自身无法消除的真实、不可避免的阻碍——但一旦模型存在,加载并解码它就不再是尚未编写的代码了。
 
