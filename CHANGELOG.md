@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.5] - A shared proof and single use for confirmations, and a review queue that keeps what a person is reading
+
 - **A confirmation can carry the shared proof:** `serve --confirmation-proof-key-file` adds `confirmationProof` (the `ConfirmationProof` of the SDK: the trajectory fingerprint, the robot, the operator, a time window, an identity for one use) to the answer of `confirm`. Off without the option; the approval itself is unchanged.
 - **An approval of a proposal can be accepted once (`confirmation.single_use`, off):** with the setting on, each approval carries a random `approval_id` inside the signed message, and `verify_approval_once` with an `ApprovalLedger` refuses an approval that was already presented until the time it was valid for has passed (the ledger refuses new identities rather than forget one that is still valid). Approvals without the identity, from an engine with the setting off, are still accepted unless the layer that executes asks for the identity with `require_id`. Tests cover the repeat, an approval of another trajectory or robot, the expiry and the full ledger.
 
