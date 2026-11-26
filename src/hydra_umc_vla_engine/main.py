@@ -30,8 +30,8 @@ from .api import VlaEngineServer
 from .guard import REJECTED, GuardConfigError, guard_trajectory, load_limits
 from .hardware import EngineMode, check_engine_status
 from .confidence import ConfidenceConfigError, load_confidence_policy
-from .confirmation import ConfirmationConfigError, ConfirmationStore, load_confirmation_policy
-from .confirmation_proof import load_proof_key
+from .confirmation import CognitiveNodeGate, ConfirmationConfigError, ConfirmationStore, load_confirmation_policy
+from .confirmation_proof import load_node_token, load_proof_key
 from .consistency import ConsistencyConfigError, load_consistency_policy
 from .kinematic_check import KinematicsConfigError, load_kinematics_policy
 from .shadow import ShadowError, load_shadow_policy
@@ -212,7 +212,18 @@ def _cmd_serve(args: argparse.Namespace) -> int:
             except ValueError as exc:
                 print(f"error: {exc}", file=sys.stderr)
                 return 2
-        confirmations = ConfirmationStore(confirmation, signer[0], signer[1], proof_key=proof_key)
+        gate = None
+        if args.cognitive_node_url:
+            try:
+                gate = CognitiveNodeGate(args.cognitive_node_url, load_node_token(args.cognitive_node_token_file or ""))
+            except ValueError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 2
+            print(f"[vla-engine] every confirmation is asked of the cognitive node at {gate.url} before the approval is given")
+        confirmations = ConfirmationStore(confirmation, signer[0], signer[1], proof_key=proof_key, gate=gate)
+    elif args.cognitive_node_url:
+        print("error: --cognitive-node-url asks about confirmations: it needs the confirmation section switched on", file=sys.stderr)
+        return 2
     try:
         server = VlaEngineServer((args.addr, args.port), args.workspace, token, guard, args.require_guard, signer, model_version=args.model_version.strip(), confidence=confidence,
                                  consistency=consistency, shadow=shadow, kinematics=kinematics, confirmations=confirmations, max_threads=args.max_threads)
@@ -293,6 +304,9 @@ def _build_parser() -> argparse.ArgumentParser:
                        help="how a proposal is signed: hmac (a shared key, the default) or ed25519 (--proposal-key-file then holds a 32-byte seed in hex, and whoever checks needs only the public key)")
     serve.add_argument("--confirmation-proof-key-file", default=None, dest="confirmation_proof_key_file",
                        help="with confirmations on, the answer of confirm also carries a ConfirmationProof signed with the key of this file, for the layer that acts (off by default)")
+    serve.add_argument("--cognitive-node-url", default="", dest="cognitive_node_url",
+                       help="with confirmations on, ask HYDRA-UMC-COGNITIVE-NODE at this address before an approval is given, with the robot as the subject and the proof when there is one (off by default)")
+    serve.add_argument("--cognitive-node-token-file", default=None, dest="cognitive_node_token_file", help="file with the bearer token for --cognitive-node-url")
     serve.add_argument("--robot-id", default="", dest="robot_id", help="the robot the signed proposals are for (needed with --proposal-key-file)")
     serve.add_argument("--model-version", default="", dest="model_version",
                        help="the version of the model that produces the actions; with --proposal-key-file it is signed into every proposal")
