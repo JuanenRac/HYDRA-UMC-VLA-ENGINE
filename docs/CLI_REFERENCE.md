@@ -252,4 +252,6 @@ values/tokens supplied directly on the command line or via a JSON file.
 
 ## Confirmation proof
 
+`serve --cognitive-node-url URL [--cognitive-node-token-file FILE]` (off by default; needs the confirmation of proposals): before `confirm` answers with an approval the engine asks `POST /autonomy/evaluate` of HYDRA-UMC-COGNITIVE-NODE with `source` `vla-engine`, `level` `execute_with_confirmation`, `subjectId` the robot id, `actionId` the trajectory fingerprint and, with `--confirmation-proof-key-file`, the `confirmationProof`. Only `allow` gives the approval: another decision answers `403`, a node that cannot be asked answers `503`, and the proposal is used up. The autonomy file of the node must give `vla-engine` the level `execute_with_confirmation`.
+
 `serve --confirmation-proof-key-file FILE` (off by default; one line of at least 32 characters, mode 600): with the confirmation of proposals on, the answer of `confirm` also carries `confirmationProof`, the `ConfirmationProof` of HYDRA-UMC-SDK (`kind` `approval`, `action_id` the trajectory fingerprint, `subject_id` the robot id). Give the same file to the layer that acts.

@@ -45,7 +45,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .confirmation_proof import proof_identifier, sign_proof
+from .confirmation_proof import UNREACHABLE, ask_autonomy, check_node_url, proof_identifier, sign_proof
 from .trajectory import Pose
 
 CONFIG_ENV = "HYDRA_UMC_VLA_ENGINE_CONFIG"
@@ -215,9 +215,26 @@ class _Pending:
     prepared: float = 0.0
 
 
+class CognitiveNodeGate:
+    """Asks HYDRA-UMC-COGNITIVE-NODE before an approval is handed out: the subject is the robot and the proof, when one was signed, goes with it."""
+
+    def __init__(self, url: str, token: str = "") -> None:
+        self.url, self._token = check_node_url(url), token
+
+    def __call__(self, fingerprint: str, robot_id: str, approval: dict[str, Any]) -> None:
+        proof = approval.get("confirmationProof")
+        allowed, why = ask_autonomy(self.url, self._token, source="vla-engine", kind="proposal", action_id=proof_identifier(fingerprint),
+                                    subject_id=proof_identifier(robot_id), proof=proof)
+        if not allowed:
+            raise ConfirmationError(f"no approval was given: {why}; offer the proposal again", 503 if why == UNREACHABLE else 403)
+
+
 class ConfirmationStore:
-    def __init__(self, policy: ConfirmationPolicy, key: bytes, robot_id: str, clock: Callable[[], float] = time.time, proof_key: bytes | None = None) -> None:
+    def __init__(self, policy: ConfirmationPolicy, key: bytes, robot_id: str, clock: Callable[[], float] = time.time, proof_key: bytes | None = None,
+                 gate: Callable[[str, str, dict[str, Any]], None] | None = None) -> None:
         self.policy = policy
+        # asked before an approval leaves (CognitiveNodeGate); it raises ConfirmationError to withhold it
+        self._gate = gate
         # with a key of its own the answer of confirm also carries the ConfirmationProof of the SDK (confirmation_proof.py)
         self._proof_key = proof_key
         self._key = key
@@ -284,7 +301,19 @@ class ConfirmationStore:
                     "confirmationValiditySeconds": self.policy.token_seconds}
 
     def confirm(self, pending_id: str, operator: object, token: object) -> dict[str, Any]:
-        """Step 2: the signed approval, once, for the operator that prepared and the token that was issued."""
+        """Step 2: the signed approval, once, for the operator that prepared and the token that was issued. With a gate (the cognitive node) the
+        approval is handed out only when it allows it; a refusal uses the proposal up."""
+        approval = self._approve(pending_id, operator, token)
+        if self._gate is not None:
+            try:
+                self._gate(approval["fingerprint"], self.robot_id, approval)
+            except ConfirmationError:
+                with self._lock:
+                    self.approved -= 1
+                raise
+        return approval
+
+    def _approve(self, pending_id: str, operator: object, token: object) -> dict[str, Any]:
         name = self._operator(operator)
         if not isinstance(token, str) or token.count(".") != 1 or len(token) > 1024:
             raise ConfirmationError("confirmationToken must be the text that prepare answered")
