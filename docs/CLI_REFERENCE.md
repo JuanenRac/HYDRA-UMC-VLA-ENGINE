@@ -249,3 +249,7 @@ CLI encodes/decodes — is described in the project README's own roadmap
 but is not implemented yet; it needs real Hailo-10 hardware this
 environment does not have. This CLI only ever consumes action
 values/tokens supplied directly on the command line or via a JSON file.
+
+## Confirmation proof
+
+`serve --confirmation-proof-key-file FILE` (off by default; one line of at least 32 characters, mode 600): with the confirmation of proposals on, the answer of `confirm` also carries `confirmationProof`, the `ConfirmationProof` of HYDRA-UMC-SDK (`kind` `approval`, `action_id` the trajectory fingerprint, `subject_id` the robot id). Give the same file to the layer that acts.

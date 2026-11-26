@@ -45,6 +45,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .confirmation_proof import proof_identifier, sign_proof
 from .trajectory import Pose
 
 CONFIG_ENV = "HYDRA_UMC_VLA_ENGINE_CONFIG"
@@ -215,8 +216,10 @@ class _Pending:
 
 
 class ConfirmationStore:
-    def __init__(self, policy: ConfirmationPolicy, key: bytes, robot_id: str, clock: Callable[[], float] = time.time) -> None:
+    def __init__(self, policy: ConfirmationPolicy, key: bytes, robot_id: str, clock: Callable[[], float] = time.time, proof_key: bytes | None = None) -> None:
         self.policy = policy
+        # with a key of its own the answer of confirm also carries the ConfirmationProof of the SDK (confirmation_proof.py)
+        self._proof_key = proof_key
         self._key = key
         self.robot_id = robot_id
         self._clock = clock
@@ -313,6 +316,10 @@ class ConfirmationStore:
             approval = {"approved": True, "fingerprint": pending.fingerprint, "robot_id": self.robot_id, "operator": name, "approved_at_ms": now_ms, "expires_at_ms": expires, "signature": signature}
             if approval_id is not None:
                 approval["approval_id"] = approval_id
+            if self._proof_key is not None:
+                approval["confirmationProof"] = sign_proof(
+                    self._proof_key, kind="approval", action_id=proof_identifier(pending.fingerprint), subject_id=proof_identifier(self.robot_id),
+                    operator=proof_identifier(name), approved_at_ms=now_ms, expires_at_ms=expires, approval_id=approval_id or secrets.token_hex(16))
             return approval
 
     def reject(self, pending_id: str, operator: object) -> dict[str, Any]:
