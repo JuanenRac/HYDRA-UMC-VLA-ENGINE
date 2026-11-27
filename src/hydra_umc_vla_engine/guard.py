@@ -178,7 +178,7 @@ def load_limits(path: str | Path) -> GuardLimits:
         raw = json.loads(Path(path).read_text(encoding="utf-8"), parse_constant=lambda name: (_ for _ in ()).throw(GuardConfigError(f"{name} is not a number")))
     except OSError as error:
         raise GuardConfigError(f"cannot read the guard file: {error}") from error
-    except json.JSONDecodeError as error:
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise GuardConfigError(f"the guard file is not JSON: {error}") from error
     return parse_limits(raw)
 

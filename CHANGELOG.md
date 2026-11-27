@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **A guard file in another encoding is a configuration error:** it ended the program with an unhandled error instead of saying that the file cannot be used.
+
 - **A confirmation can be asked of the cognitive node:** with `serve --cognitive-node-url` (off by default) the approval of `confirm` is given only when HYDRA-UMC-COGNITIVE-NODE allows it. The question carries the robot as `subjectId`, the trajectory fingerprint as `actionId` and the `confirmationProof` when a proof key is set; any other answer, or no answer, withholds the approval.
 
 ## [0.2.5] - A shared proof and single use for confirmations, and a review queue that keeps what a person is reading
